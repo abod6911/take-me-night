@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>take me night — Late Night Artisanal Pizza | Jeddah</title>
+  
+  <meta name="description" content="take me night — Iconic late-night wood-fired artisanal pizza brand in Jeddah. 3D undulating checkered tablecloth, kinetic typography, neon nightlife vibe." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>" />
+
+  <!-- Google Fonts: Anton, Plus Jakarta Sans, Inter, Playfair Display, Space Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,500;1,600;1,700;1,800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN for rapid styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'neon-magenta': '#E012C4',
+            'neon-magenta-glow': '#FF14D4',
+            'neon-magenta-dark': '#D411B8',
+            'neon-yellow': '#FFE600',
+            'midnight-black': '#0B0711',
+            'velvet-dark': '#07040C',
+            'starlight-white': '#F8F6FA',
+            // Backward compatibility aliases
+            'brasa-red': '#E012C4',
+            'brasa-darkred': '#D411B8',
+            'brasa-yellow': '#FFE600',
+            'brasa-dark': '#0B0711',
+            'brasa-cream': '#F8F6FA',
+            'brasa-pitch': '#07040C',
+            'brasa-coral': '#E012C4'
+          },
+          fontFamily: {
+            display: ['Anton', 'Oswald', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+            mono: ['Space Mono', 'monospace'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="bg-[#0B0711] text-[#F8F6FA] overflow-x-hidden selection:bg-neon-magenta selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- 1. PROCEDURAL 3D WEBGL DISCO BALL PRELOADER -->
+  <!-- ========================================== -->
+  <div id="preloader" class="fixed inset-0 z-[999] bg-[#07040C] flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden">
+    <!-- Real 3D Procedural Three.js WebGL Canvas -->
+    <canvas id="preloader-canvas" class="absolute inset-0 w-full h-full pointer-events-auto"></canvas>
+
+    <!-- Top Bar: Skip Button -->
+    <div class="relative z-10 w-full flex justify-end">
+      <button id="preloader-skip" class="font-mono text-xs text-white/60 hover:text-white uppercase tracking-widest px-4 py-2 border border-white/20 rounded-full transition-colors cursor-pointer backdrop-blur-md bg-black/40">
+        Skip [ESC]
+      </button>
+    </div>
+
+    <!-- Center/Bottom Glassmorphic Neon Controls -->
+    <div id="preloader-ui" class="relative z-20 flex flex-col items-center justify-center pointer-events-auto pb-4 sm:pb-8">
+      <!-- Glowing Neon Sign Badge 'take me night' -->
+      <div id="preloader-neon-badge" class="neon-sign-badge cursor-pointer transform hover:scale-105 transition-transform shadow-[0_0_35px_rgba(224,18,196,0.8)]">
+        <span class="neon-sign-text">take me night</span>
+      </div>
+
+      <!-- Pulsing Button / Prompt -->
+      <button id="preloader-ignite-btn" type="button" class="mt-4 px-6 py-2.5 rounded-full bg-white/10 hover:bg-neon-magenta border border-neon-yellow/60 text-neon-yellow hover:text-white font-mono text-xs tracking-widest uppercase font-bold transition-all shadow-[0_0_20px_rgba(255,230,0,0.3)] hover:shadow-[0_0_30px_rgba(224,18,196,0.8)] cursor-pointer backdrop-blur-md">
+        TAP TO IGNITE THE NIGHT
+      </button>
+
+      <!-- Progress bar -->
+      <div class="w-48 sm:w-64 h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
+        <div id="preloader-bar" class="h-full bg-gradient-to-r from-neon-magenta via-neon-yellow to-white w-0 transition-all duration-[2200ms] ease-linear"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. FIXED 3D WEBGL SHADER CANVAS BACKGROUND -->
+  <!-- ========================================== -->
+  <div id="webgl-container"></div>
+
+  <!-- ========================================== -->
+  <!-- 3. FIXED UI CHROME (Always Visible / Sticky) -->
+  <!-- ========================================== -->
+  <header class="fixed-chrome">
+    <div class="w-full flex items-center justify-between p-4 sm:p-7 max-w-[1920px] mx-auto">
+      
+      <!-- Top-Left Glowing Neon Sign Badge -->
+      <a href="#" class="neon-sign-badge">
+        <span class="neon-sign-text">take me night</span>
+      </a>
+
+      <!-- Top-Right Navigation Pills (Silent: zero audio controls) -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- MENU Pill -->
+        <a href="#the-menu" id="nav-menu-btn" class="nav-pill px-5 sm:px-7 py-2.5 rounded-full font-sans font-bold text-xs sm:text-sm tracking-wider uppercase shadow-lg">
+          MENU
+        </a>
+
+        <!-- CART Pill -->
+        <button type="button" id="nav-cart-btn" class="nav-pill px-5 sm:px-7 py-2.5 rounded-full font-sans font-bold text-xs sm:text-sm tracking-wider uppercase shadow-lg cursor-pointer">
+          CART (<span id="nav-cart-count">0</span>)
+        </button>
+
+        <!-- ORDER NOW Pill -->
+        <button type="button" class="btn-order-trigger nav-pill px-5 sm:px-7 py-2.5 rounded-full font-sans font-bold text-xs sm:text-sm tracking-wider uppercase shadow-lg cursor-pointer hidden sm:inline-flex" data-pizza-id="take_me_night">
+          ORDER NOW
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Left-Edge Vertical Barcode Strip (Fixed on middle-left edge) -->
+  <aside class="vertical-barcode-strip py-4 px-2 hidden md:flex flex-col items-center gap-3 select-none pointer-events-none">
+    <div class="font-mono font-bold text-[9px] tracking-widest text-neutral-500 uppercase -rotate-90 my-3">
+      JEDDAH 02
+    </div>
+    <!-- Realistic Vertical Barcode SVG -->
+    <svg class="barcode-svg w-5 h-44" viewBox="0 0 20 160" fill="#0B0711">
+      <rect x="1" y="0" width="2" height="160"/>
+      <rect x="4" y="0" width="1" height="160"/>
+      <rect x="6" y="0" width="3" height="160"/>
+      <rect x="11" y="0" width="1" height="160"/>
+      <rect x="14" y="0" width="4" height="160"/>
+      <rect x="1" y="0" width="2" height="160"/>
+      <rect x="5" y="0" width="2" height="160"/>
+      <rect x="9" y="0" width="1" height="160"/>
+      <rect x="12" y="0" width="3" height="160"/>
+      <rect x="17" y="0" width="2" height="160"/>
+    </svg>
+    <div class="font-mono font-bold text-[9px] tracking-widest text-neutral-800 -rotate-90 my-5 whitespace-nowrap">
+      966558904421
+    </div>
+  </aside>
+
+  <!-- Floating Sticky Cart Pill (Appears when items are in cart) -->
+  <button id="sticky-cart-btn" class="floating-cart-pill" aria-label="Open Cart">
+    <span class="text-xl">🍕</span>
+    <span class="font-sans font-black text-xs sm:text-sm tracking-wider uppercase">CART (<span id="sticky-cart-count">0</span>)</span>
+    <span class="w-1.5 h-1.5 rounded-full bg-neon-yellow"></span>
+    <span id="sticky-cart-total" class="font-sans font-black text-xs sm:text-sm text-neon-yellow">0 SAR</span>
+  </button>
+
+  <!-- ========================================== -->
+  <!-- 4. MAIN PAGE CONTENT -->
+  <!-- ========================================== -->
+  <main id="content">
+
+    <!-- ========================================== -->
+    <!-- 4.1 HERO SECTION: SCROLL-PINNED DISH SHOWCASE -->
+    <!-- ========================================== -->
+    <section class="hero-pin-wrapper">
+
+      <!-- z-index: 2 — Diagonal Continuous Marquee Ribbon at -4deg behind plate -->
+      <div class="hero-ribbon-container">
+        <div class="hero-ribbon-track">
+          <span class="font-display font-black text-2xl sm:text-3xl text-midnight-black tracking-wider uppercase px-4">
+            TAKE ME NIGHT • LATE NIGHT PIZZA • JEDDAH • OPEN TILL 04:00 AM • ARTISANAL CRUST • +966 55 890 4421 • ORDER ONLINE •&nbsp;
+          </span>
+          <span class="font-display font-black text-2xl sm:text-3xl text-midnight-black tracking-wider uppercase px-4">
+            TAKE ME NIGHT • LATE NIGHT PIZZA • JEDDAH • OPEN TILL 04:00 AM • ARTISANAL CRUST • +966 55 890 4421 • ORDER ONLINE •&nbsp;
+          </span>
+          <span class="font-display font-black text-2xl sm:text-3xl text-midnight-black tracking-wider uppercase px-4">
+            TAKE ME NIGHT • LATE NIGHT PIZZA • JEDDAH • OPEN TILL 04:00 AM • ARTISANAL CRUST • +966 55 890 4421 • ORDER ONLINE •&nbsp;
+          </span>
+          <span class="font-display font-black text-2xl sm:text-3xl text-midnight-black tracking-wider uppercase px-4">
+            TAKE ME NIGHT • LATE NIGHT PIZZA • JEDDAH • OPEN TILL 04:00 AM • ARTISANAL CRUST • +966 55 890 4421 • ORDER ONLINE •&nbsp;
+          </span>
+        </div>
+      </div>
+
+      <!-- Centerpiece: Typography + Script Overlay + Overhead Plate -->
+      <div class="hero-centerpiece">
+        
+        <!-- z-index: 3 — 2-Line Stacked Colossal Neon Magenta Title (Zero Edge Clipping & High Legibility) -->
+        <div class="hero-title-viewport">
+          <div class="hero-title-item" data-index="0">
+            <span class="title-line-1">TAKE ME</span>
+            <span class="title-line-2">NIGHT</span>
+          </div>
+          <div class="hero-title-item" data-index="1">
+            <span class="title-line-1">SMOKED</span>
+            <span class="title-line-2">BRISKET</span>
+          </div>
+          <div class="hero-title-item" data-index="2">
+            <span class="title-line-1">CRAZY</span>
+            <span class="title-line-2">RANCH</span>
+          </div>
+          <div class="hero-title-item" data-index="3">
+            <span class="title-line-1">DOUBLE</span>
+            <span class="title-line-2">PEPPERONI</span>
+          </div>
+          <div class="hero-title-item" data-index="4">
+            <span class="title-line-1">TRUFFLE</span>
+            <span class="title-line-2">BURRATA</span>
+          </div>
+          <div class="hero-title-item" data-index="5">
+            <span class="title-line-1">HOT HONEY</span>
+            <span class="title-line-2">DIABLO</span>
+          </div>
+        </div>
+
+        <!-- z-index: 4 — Script Subtitle Pill Badge at corner of giant title (NOT over food) -->
+        <div class="hero-script-viewport">
+          <div class="hero-script-item" data-index="0">sweet compote &amp; hot honey</div>
+          <div class="hero-script-item" data-index="1">14h brisket &amp; smoked provolone</div>
+          <div class="hero-script-item" data-index="2">crispy chicken &amp; garlic ranch</div>
+          <div class="hero-script-item" data-index="3">crispy cupping &amp; hot honey</div>
+          <div class="hero-script-item" data-index="4">fresh burrata &amp; black truffle</div>
+          <div class="hero-script-item" data-index="5">spicy soppressata &amp; habanero</div>
+        </div>
+
+        <!-- z-index: 5 — Overhead Circular Ceramic Plates Container (100% Artisanal Pizzas) -->
+        <div class="hero-plates-container">
+          <!-- Plate 1: Take Me Night Signature -->
+          <div class="hero-plate-item" data-index="0">
+            <div class="plate-disc">
+              <img src="/dishes/take_me_night.png" alt="Take Me Night Pizza" />
+            </div>
+          </div>
+          <!-- Plate 2: Smoked Brisket -->
+          <div class="hero-plate-item" data-index="1">
+            <div class="plate-disc">
+              <img src="/dishes/smoked_brisket.png" alt="Smoked Brisket Pizza" />
+            </div>
+          </div>
+          <!-- Plate 3: Crazy Ranch -->
+          <div class="hero-plate-item" data-index="2">
+            <div class="plate-disc">
+              <img src="/dishes/crazy_ranch.png" alt="Crazy Ranch Pizza" />
+            </div>
+          </div>
+          <!-- Plate 4: Double Pepperoni -->
+          <div class="hero-plate-item" data-index="3">
+            <div class="plate-disc">
+              <img src="/dishes/double_pepperoni.png" alt="Double Pepperoni Pizza" />
+            </div>
+          </div>
+          <!-- Plate 5: Truffle Burrata -->
+          <div class="hero-plate-item" data-index="4">
+            <div class="plate-disc">
+              <img src="/dishes/truffle_burrata.png" alt="Truffle Burrata Pizza" />
+            </div>
+          </div>
+          <!-- Plate 6: Hot Honey Diablo -->
+          <div class="hero-plate-item" data-index="5">
+            <div class="plate-disc">
+              <img src="/dishes/hot_honey_diablo.png" alt="Hot Honey Diablo Pizza" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- z-index: 10 — Bottom-Left Info Card (Crisp White with Clean Geometric Typography) -->
+      <div class="hero-info-card">
+        <!-- Subtitle & Index badge -->
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-serif italic font-semibold text-neon-magenta text-base sm:text-lg">
+            Late night crust
+          </span>
+          <span id="hero-info-index" class="font-mono text-xs text-neutral-400 font-bold">
+            01 / 06
+          </span>
+        </div>
+
+        <h4 id="hero-info-title" class="font-sans font-black text-xl sm:text-2xl uppercase tracking-tight text-neutral-900 mt-1 mb-1">
+          TAKE ME NIGHT
+        </h4>
+
+        <!-- Clean Dark Grey Ingredient Description -->
+        <p id="hero-info-desc" class="font-mono text-xs sm:text-sm text-neutral-700 leading-relaxed min-h-[44px] mb-4">
+          Signature sweet tomato compote, buffalo mozzarella, fresh basil, garlic-infused hot honey drizzle.
+        </p>
+
+        <!-- Huge Bold Price (68 SAR) & Order CTA Button (Geometric Sans-Serif) -->
+        <div class="flex items-center justify-between pt-3 border-t border-neutral-200 gap-2">
+          <div id="hero-info-price" class="font-sans font-black text-2xl sm:text-3xl text-midnight-black tracking-tight">
+            68 <span class="text-xs text-neon-magenta align-top font-bold">SAR</span>
+          </div>
+          <button 
+            id="hero-order-trigger" 
+            class="btn-order-trigger bg-neon-magenta hover:bg-midnight-black text-white font-sans font-bold text-xs sm:text-sm tracking-wider uppercase px-5 py-2.5 rounded-full shadow-md transition-all cursor-pointer"
+            data-pizza-id="take_me_night"
+          >
+            ORDER NOW +
+          </button>
+        </div>
+      </div>
+
+      <!-- Scroll cue on bottom right -->
+      <div class="absolute bottom-8 right-8 z-20 hidden lg:flex items-center gap-3 pointer-events-none select-none">
+        <span class="font-mono text-[10px] uppercase tracking-widest text-neutral-300 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+          SCROLL TO EXPLORE PIZZAS
+        </span>
+        <div class="w-2.5 h-2.5 rounded-full bg-neon-magenta animate-ping"></div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4.2 MENU GRID SECTION: "THE PIZZA MENU" (#the-menu) -->
+    <!-- ========================================== -->
+    <section id="the-menu" class="max-w-[1400px] mx-auto">
+      
+      <!-- Section Header Solid Magenta Banner Card -->
+      <div class="menu-header-banner">
+        <span class="font-serif italic font-bold text-neon-yellow text-lg sm:text-2xl block mb-1">
+          midnight cravings
+        </span>
+        <h2 class="font-display font-black text-white text-5xl sm:text-7xl lg:text-8xl tracking-tight uppercase leading-none drop-shadow-md">
+          THE PIZZA MENU
+        </h2>
+        <p class="font-mono text-xs sm:text-sm text-neutral-100/90 mt-4 max-w-lg mx-auto font-normal">
+          Slow-fermented 72-hour sourdough baked at 480°C in live fire. Late-night fuel for night owls in Jeddah.
+        </p>
+      </div>
+
+      <!-- 2-Column Staggered Dish Cards Grid -->
+      <div id="menu-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-y-16 md:gap-x-12 lg:gap-x-16 max-w-6xl mx-auto px-2">
+        <!-- Rendered dynamically by MenuGrid module -->
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4.3 FOOTER & LATE NIGHT TICKER -->
+    <!-- ========================================== -->
+    <footer id="footer-section">
+
+      <!-- Full-Width Laser Yellow Horizontal Marquee Strip -->
+      <div class="footer-marquee-strip">
+        <div class="footer-marquee-track">
+          <span class="font-display font-black text-xl sm:text-2xl text-midnight-black tracking-wider uppercase px-6">
+            +966 55 890 4421 • JEDDAH • TAKE ME NIGHT • LATE NIGHT PIZZA • OPEN UNTIL 04:00 AM • PRINCE SULTAN RD •&nbsp;
+          </span>
+          <span class="font-display font-black text-xl sm:text-2xl text-midnight-black tracking-wider uppercase px-6">
+            +966 55 890 4421 • JEDDAH • TAKE ME NIGHT • LATE NIGHT PIZZA • OPEN UNTIL 04:00 AM • PRINCE SULTAN RD •&nbsp;
+          </span>
+          <span class="font-display font-black text-xl sm:text-2xl text-midnight-black tracking-wider uppercase px-6">
+            +966 55 890 4421 • JEDDAH • TAKE ME NIGHT • LATE NIGHT PIZZA • OPEN UNTIL 04:00 AM • PRINCE SULTAN RD •&nbsp;
+          </span>
+          <span class="font-display font-black text-xl sm:text-2xl text-midnight-black tracking-wider uppercase px-6">
+            +966 55 890 4421 • JEDDAH • TAKE ME NIGHT • LATE NIGHT PIZZA • OPEN UNTIL 04:00 AM • PRINCE SULTAN RD •&nbsp;
+          </span>
+        </div>
+      </div>
+
+      <!-- Giant Footer Reveal: Screen-Spanning Colossal Typography -->
+      <div class="footer-giant-title">
+        TAKE ME NIGHT
+      </div>
+
+      <!-- Editorial Reservation & Location Details -->
+      <div class="footer-details-grid max-w-5xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 border-t-2 border-white/10 text-center md:text-left">
+        <div>
+          <h4 class="font-sans font-black text-xl uppercase text-neon-magenta mb-2 tracking-wide">LOCATION</h4>
+          <p class="font-mono text-xs sm:text-sm text-neutral-300 leading-relaxed">
+            Prince Sultan Road, Al Rawdah<br />
+            Jeddah 23431, Saudi Arabia<br />
+            Dine-in, Takeaway &amp; Night Delivery
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-sans font-black text-xl uppercase text-neon-magenta mb-2 tracking-wide">NIGHT OWL HOURS</h4>
+          <p class="font-mono text-xs sm:text-sm text-neutral-300 leading-relaxed">
+            Every Night: 18:00 – 04:00 AM<br />
+            Live Fire Ovens ignite at 17:30<br />
+            Late delivery orders till 03:45 AM
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center md:items-start justify-center">
+          <button 
+            type="button" 
+            class="btn-order-trigger bg-neon-magenta hover:bg-neon-yellow hover:text-black text-white font-sans font-black text-sm sm:text-base tracking-wider uppercase px-8 py-3.5 rounded-full shadow-xl transition-all duration-200 cursor-pointer w-full sm:w-auto text-center"
+            data-pizza-id="take_me_night"
+          >
+            ORDER LATE NIGHT NOW
+          </button>
+          <span class="font-mono text-[11px] text-neutral-400 mt-2">
+            WhatsApp Direct: +966 55 890 4421 • @takemenight
+          </span>
+        </div>
+      </div>
+
+      <!-- Bottom Credits Strip -->
+      <div class="bg-[#050308] text-neutral-400 py-6 px-6 text-center font-mono text-xs border-t border-white/5 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto gap-4">
+        <div>© 2024–2026 TAKE ME NIGHT PIZZA CO. JEDDAH, KSA. ALL RIGHTS RESERVED.</div>
+        <div class="text-neutral-500">JEDDAH NIGHTLIFE • 72H SOURDOUGH • 3D WAVY CHECKERBOARD</div>
+      </div>
+
+    </footer>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 5. SLIDE-OVER NEON NIGHT CART DRAWER (MODERN FRICTIONLESS UX) -->
+  <!-- ========================================== -->
+  <div id="cart-drawer" class="cart-drawer-overlay hidden">
+    <div id="cart-backdrop" class="cart-backdrop"></div>
+    <div id="cart-drawer-panel" class="cart-drawer-panel no-scrollbar flex flex-col justify-between">
+      
+      <!-- Drawer Header -->
+      <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#0F0A18]">
+        <div>
+          <span class="neon-sign-badge scale-75 origin-left mb-1">
+            <span class="neon-sign-text text-xs">take me night</span>
+          </span>
+          <h3 class="font-sans font-black text-xl sm:text-2xl text-white uppercase tracking-tight">YOUR NIGHT CART</h3>
+        </div>
+        <button id="cart-close-btn" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm cursor-pointer transition-colors" aria-label="Close cart">
+          ✕
+        </button>
+      </div>
+
+      <!-- STATE A: EMPTY CART CONTAINER (Shown when cart is empty) -->
+      <div id="cart-empty-state" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div class="w-20 h-20 rounded-full bg-neon-magenta/15 border border-neon-magenta/40 flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(224,18,196,0.3)] mb-4 animate-bounce">
+          🍕
+        </div>
+        <h4 class="font-sans font-black text-xl text-white uppercase tracking-tight mb-2">
+          Your Night Box is Empty
+        </h4>
+        <p class="font-mono text-xs text-neutral-400 max-w-xs leading-relaxed mb-6">
+          Handcrafted 72h sourdough pizzas baked at 480°C are waiting for your midnight craving.
+        </p>
+        <button id="cart-explore-menu-btn" type="button" class="px-7 py-3 rounded-full bg-neon-magenta hover:bg-neon-yellow hover:text-black text-white font-sans font-extrabold text-xs tracking-wider uppercase shadow-lg transition-all cursor-pointer">
+          EXPLORE THE MENU 🍕
+        </button>
+      </div>
+
+      <!-- STATE B: ACTIVE CART CONTAINER (Shown when cart has items) -->
+      <div id="cart-active-state" class="flex-1 overflow-y-auto no-scrollbar flex flex-col hidden">
+        
+        <!-- Order Mode Segmented Toggle (Pickup vs Delivery) -->
+        <div class="p-4 bg-[#140D20] border-b border-white/10 shrink-0">
+          <div class="flex bg-[#0B0711] p-1 rounded-xl border border-white/15">
+            <button type="button" class="order-type-pill active" data-type="pickup">
+              🏃 Pickup (Free)
+            </button>
+            <button type="button" class="order-type-pill" data-type="delivery">
+              🛵 Fast Delivery (+15 SAR)
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Itemized Pizzas List -->
+        <div id="cart-items-list" class="p-4 sm:p-5 space-y-3 flex-1 overflow-y-auto no-scrollbar">
+          <!-- Populated dynamically by CartDrawer with Stepper Controls -->
+        </div>
+
+        <!-- 1-Tap Dip Upsell Strip (Right inside cart) -->
+        <div class="p-4 bg-[#140E22] border-t border-b border-white/10 shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-mono text-[10px] text-neon-yellow font-bold uppercase tracking-wider">
+              🔥 ADD NIGHT DIPS (1-TAP)
+            </span>
+          </div>
+          <div id="upsell-dips-strip" class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button type="button" class="cart-upsell-chip" data-id="ranch" data-name="House Ranch" data-price="5">
+              🥣 + House Ranch (5 SAR)
+            </button>
+            <button type="button" class="cart-upsell-chip" data-id="hothoney" data-name="Hot Honey" data-price="6">
+              🍯 + Hot Honey (6 SAR)
+            </button>
+            <button type="button" class="cart-upsell-chip" data-id="truffle" data-name="Truffle Aioli" data-price="7">
+              🍄 + Truffle Aioli (7 SAR)
+            </button>
+            <button type="button" class="cart-upsell-chip" data-id="bbq" data-name="Smoky BBQ" data-price="5">
+              🔥 + Smoky BBQ (5 SAR)
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Checkout Section -->
+        <div class="p-5 bg-[#0B0711] border-t border-white/10 shrink-0">
+          
+          <!-- Summary Lines -->
+          <div class="space-y-1.5 mb-4 font-mono text-xs">
+            <div class="flex justify-between text-neutral-400">
+              <span>SUBTOTAL</span>
+              <span id="cart-subtotal" class="font-bold text-white">0 SAR</span>
+            </div>
+            <div class="flex justify-between text-neutral-400">
+              <span>DELIVERY FEE</span>
+              <span id="cart-delivery" class="font-bold text-white">FREE</span>
+            </div>
+            <div class="flex justify-between text-white font-sans font-black text-base pt-2 border-t border-white/10">
+              <span>TOTAL (INCL. VAT)</span>
+              <span id="cart-total" class="text-neon-yellow font-sans font-black text-xl">0 SAR</span>
+            </div>
+          </div>
+
+          <!-- Checkout Form -->
+          <form id="cart-checkout-form" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="checkout-name" placeholder="Your Name" required class="w-full bg-[#181125] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-sans text-white placeholder-neutral-500 focus:outline-none focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta" />
+              <input type="tel" id="checkout-phone" placeholder="Mobile (05XXXXXXXX)" required class="w-full bg-[#181125] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-sans text-white placeholder-neutral-500 focus:outline-none focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta" />
+            </div>
+            
+            <div id="delivery-address-row" style="display: none;">
+              <input type="text" id="checkout-address" placeholder="Delivery Address &amp; District in Jeddah" class="w-full bg-[#181125] border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-sans text-white placeholder-neutral-500 focus:outline-none focus:border-neon-magenta focus:ring-1 focus:ring-neon-magenta" />
+            </div>
+            
+            <!-- Interactive Payment Method Cards (3 Selectable Buttons) -->
+            <div>
+              <label class="block font-mono text-[10px] text-neutral-400 uppercase font-bold mb-1.5">
+                PAYMENT METHOD
+              </label>
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" class="payment-card active" data-method="apple_pay">
+                  <span class="text-xs"></span> Apple Pay
+                </button>
+                <button type="button" class="payment-card" data-method="mada">
+                  <span class="text-xs">🟢</span> Mada
+                </button>
+                <button type="button" class="payment-card" data-method="cash">
+                  <span class="text-xs">💵</span> Cash
+                </button>
+              </div>
+            </div>
+
+            <!-- Full-Width Crystal-Clear CTA Button -->
+            <button type="submit" id="confirm-order-btn" class="w-full mt-2 bg-gradient-to-r from-neon-magenta to-[#B80FA1] hover:from-neon-yellow hover:to-neon-yellow hover:text-black text-white font-sans font-black text-sm uppercase py-3.5 rounded-xl shadow-[0_8px_25px_rgba(224,18,196,0.45)] transition-all cursor-pointer">
+              CONFIRM ORDER • <span id="btn-total-label">0 SAR</span>
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+
+      <!-- Live Order Tracker Screen (Shown upon checkout confirmation) -->
+      <div id="order-tracker" class="hidden p-6 text-center space-y-4 my-auto">
+        <div class="w-16 h-16 bg-neon-yellow text-midnight-black rounded-full mx-auto flex items-center justify-center font-sans font-black text-3xl shadow-[0_0_35px_rgba(255,230,0,0.6)]">
+          ✓
+        </div>
+        <div>
+          <h4 class="font-sans font-black text-2xl text-white uppercase" id="tracker-order-number">ORDER #TMN-904</h4>
+          <p class="font-mono text-xs text-neon-yellow mt-1 font-bold">STATUS: 🍕 BAKING IN FIRE OVEN</p>
+          <div class="w-48 h-2 bg-white/10 rounded-full mx-auto mt-2 overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-neon-magenta to-neon-yellow animate-pulse w-3/4"></div>
+          </div>
+          <p class="font-mono text-[11px] text-neutral-400 mt-2">Estimated oven preparation: 15–20 minutes</p>
+        </div>
+        <div class="pt-2 flex flex-col gap-2">
+          <a id="whatsapp-order-btn" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20ba5a] text-black font-sans font-black text-xs uppercase py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-colors">
+            <span>💬 SEND ORDER TO WHATSAPP (+966 55 890 4421)</span>
+          </a>
+          <button type="button" id="reset-order-btn" class="w-full bg-white/10 hover:bg-white/20 text-white font-mono text-xs uppercase py-2.5 rounded-xl transition-colors cursor-pointer">
+            START NEW ORDER
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. 1-CLICK PIZZA CUSTOMIZER MODAL -->
+  <!-- ========================================== -->
+  <div id="customizer-modal" class="customizer-overlay hidden">
+    <div id="customizer-backdrop" class="cart-backdrop"></div>
+    <div id="customizer-dialog" class="customizer-dialog-box no-scrollbar">
+      <!-- Close Button -->
+      <button id="customizer-close" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm cursor-pointer transition-colors" aria-label="Close customizer">
+        ✕
+      </button>
+
+      <!-- Pizza Preview Header -->
+      <div class="flex items-center gap-4 mb-6 pb-4 border-b border-white/10">
+        <img id="customizer-pizza-img" src="/dishes/take_me_night.png" alt="Pizza" class="w-20 h-20 rounded-full object-cover border-2 border-neon-magenta shadow-lg" />
+        <div>
+          <span class="inline-block px-2 py-0.5 rounded-full bg-neon-magenta/20 text-neon-yellow font-mono text-[10px] font-bold uppercase tracking-wider mb-1">CUSTOMIZE SLICE</span>
+          <h3 id="customizer-pizza-title" class="font-sans font-black text-2xl text-white uppercase tracking-tight">TAKE ME NIGHT</h3>
+          <p id="customizer-pizza-desc" class="font-mono text-xs text-neutral-400 mt-0.5 line-clamp-2">Sweet tomato compote, buffalo mozzarella, fresh basil.</p>
+        </div>
+      </div>
+
+      <!-- 1. Size Options -->
+      <div class="mb-5">
+        <label class="block font-mono text-xs font-bold uppercase text-neutral-300 mb-2">1. Select Size</label>
+        <div class="flex flex-wrap gap-2">
+          <span class="option-chip custom-size-pill active" data-name="Regular 10&quot;" data-price="0">Regular 10" (+0 SAR)</span>
+          <span class="option-chip custom-size-pill" data-name="Large 13&quot;" data-price="14">Large 13" (+14 SAR)</span>
+          <span class="option-chip custom-size-pill" data-name="Monster 16&quot;" data-price="26">Monster 16" (+26 SAR)</span>
+        </div>
+      </div>
+
+      <!-- 2. Crust Options -->
+      <div class="mb-5">
+        <label class="block font-mono text-xs font-bold uppercase text-neutral-300 mb-2">2. Crust Style</label>
+        <div class="flex flex-wrap gap-2">
+          <span class="option-chip custom-crust-pill active" data-name="Classic Sourdough" data-price="0">Classic 72h Sourdough (+0 SAR)</span>
+          <span class="option-chip custom-crust-pill" data-name="Sesame Mozzarella Stuffed" data-price="8">Sesame Mozzarella Stuffed (+8 SAR)</span>
+          <span class="option-chip custom-crust-pill" data-name="Charcoal Black Dough" data-price="6">Charcoal Black Dough (+6 SAR)</span>
+        </div>
+      </div>
+
+      <!-- 3. Extra Dips & Toppings -->
+      <div class="mb-6">
+        <label class="block font-mono text-xs font-bold uppercase text-neutral-300 mb-2">3. Extra Dips (Optional)</label>
+        <div class="flex flex-wrap gap-2">
+          <span class="option-chip custom-dip-chip" data-name="House Ranch" data-price="5">🥣 + House Ranch (+5 SAR)</span>
+          <span class="option-chip custom-dip-chip" data-name="Hot Honey" data-price="6">🍯 + Hot Honey (+6 SAR)</span>
+          <span class="option-chip custom-dip-chip" data-name="Truffle Aioli" data-price="7">🍄 + Truffle Aioli (+7 SAR)</span>
+          <span class="option-chip custom-dip-chip" data-name="Smoky BBQ" data-price="5">🔥 + Smoky BBQ (+5 SAR)</span>
+        </div>
+      </div>
+
+      <!-- Bottom Add to Cart Action -->
+      <div class="flex items-center justify-between pt-4 border-t border-white/10">
+        <div>
+          <div class="font-mono text-[10px] text-neutral-400 uppercase">PRICE TOTAL</div>
+          <div id="customizer-confirm-price" class="font-sans font-black text-2xl text-neon-yellow">68 SAR</div>
+        </div>
+        <button type="button" id="customizer-confirm-btn" class="bg-neon-magenta hover:bg-neon-yellow hover:text-black text-white font-sans font-black text-xs sm:text-sm uppercase px-8 py-3 rounded-full shadow-lg transition-all active:scale-95 cursor-pointer">
+          ADD TO CART 🍕
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
