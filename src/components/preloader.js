@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
 
 export class Preloader {
@@ -25,7 +24,7 @@ export class Preloader {
     this.initThree();
     this.createStudioEnvironment();
     this.createSparkleParticles();
-    this.loadGLTFDiscoBall();
+    this.createInstancedDiscoBall();
     this.bindEvents();
     this.animate();
 
@@ -219,139 +218,124 @@ export class Preloader {
     return new THREE.CanvasTexture(canvas);
   }
 
-  loadGLTFDiscoBall() {
+  createInstancedDiscoBall() {
+    const isMobile = this.width < 768;
     this.discoGroup = new THREE.Group();
-    this.discoGroup.position.set(0, 0.65, 0);
+    this.discoGroup.position.set(0, isMobile ? 0.35 : 0.65, 0);
 
     // Spinning pivot group
     this.spinPivot = new THREE.Group();
     this.discoGroup.add(this.spinPivot);
     this.discoBall = this.spinPivot;
 
-    // Cable extending from top of model to ceiling
-    const cableGeo = new THREE.CylinderGeometry(0.012, 0.012, 12, 16);
-    const cableMat = new THREE.MeshStandardMaterial({
-      color: 0xcccccc,
-      metalness: 0.8,
-      roughness: 0.2
+    const R = 1.72;
+
+    // 1. Dark core backing sphere
+    const coreGeo = new THREE.SphereGeometry(R * 0.992, 32, 32);
+    const coreMat = new THREE.MeshStandardMaterial({
+      color: 0x14101e,
+      roughness: 0.85,
+      metalness: 0.1
     });
-    this.cable = new THREE.Mesh(cableGeo, cableMat);
-    this.cable.position.y = 7.5;
-    this.discoGroup.add(this.cable);
+    this.spinPivot.add(new THREE.Mesh(coreGeo, coreMat));
+
+    // 2. Thousands of Real 3D Physical Square Mirror Tiles
+    const tileW = 0.095;
+    const tileH = 0.088;
+    const tileD = 0.012;
+    const tileGeo = new THREE.BoxGeometry(tileW, tileH, tileD);
+    const tileMat = new THREE.MeshStandardMaterial({
+      color: 0xfcfdff,
+      metalness: 0.98,
+      roughness: 0.08,
+      envMapIntensity: 2.8
+    });
+
+    const numRows = 36;
+    const matrices = [];
+    const dummy = new THREE.Object3D();
+
+    for (let r = 1; r < numRows - 1; r++) {
+      const phi = (r / (numRows - 1) - 0.5) * Math.PI * 0.94; // -85 deg to +85 deg
+      const ringY = R * Math.sin(phi);
+      const ringR = R * Math.cos(phi);
+      const circumference = 2 * Math.PI * ringR;
+      const countInRing = Math.max(8, Math.floor(circumference / (tileW * 1.04)));
+
+      for (let i = 0; i < countInRing; i++) {
+        const theta = (i / countInRing) * Math.PI * 2 + (r % 2 === 0 ? Math.PI / countInRing : 0);
+        const x = ringR * Math.cos(theta);
+        const z = ringR * Math.sin(theta);
+        const y = ringY;
+
+        dummy.position.set(x, y, z);
+        dummy.lookAt(x * 2, y * 2, z * 2);
+        // Very slight natural facet micro-tilt (+/- 0.012 rad) so individual tiles shimmer as it spins
+        dummy.rotation.x += (Math.sin(i * 13 + r * 7) * 0.5) * 0.025;
+        dummy.rotation.y += (Math.cos(i * 7 + r * 13) * 0.5) * 0.025;
+        dummy.updateMatrix();
+        matrices.push(dummy.matrix.clone());
+      }
+    }
+
+    const instancedMesh = new THREE.InstancedMesh(tileGeo, tileMat, matrices.length);
+    for (let i = 0; i < matrices.length; i++) {
+      instancedMesh.setMatrixAt(i, matrices[i]);
+    }
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    instancedMesh.castShadow = true;
+    instancedMesh.receiveShadow = true;
+    this.spinPivot.add(instancedMesh);
+
+    // 3. Polished Gold Hardware (Cap, Loop, Hanging Chain)
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xe5ba42,
+      metalness: 0.95,
+      roughness: 0.2,
+      envMapIntensity: 2.2
+    });
+
+    // Top brass mounting cap
+    const hookGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.18, 32);
+    const hook = new THREE.Mesh(hookGeo, goldMat);
+    hook.position.y = R + 0.08;
+    this.spinPivot.add(hook);
+
+    // Top loop
+    const loopGeo = new THREE.TorusGeometry(0.18, 0.035, 16, 32);
+    const loop = new THREE.Mesh(loopGeo, goldMat);
+    loop.position.y = R + 0.28;
+    loop.rotation.y = Math.PI / 4;
+    this.spinPivot.add(loop);
+
+    // Hanging chain links extending upward to the ceiling
+    const chainGroup = new THREE.Group();
+    const linkGeo = new THREE.TorusGeometry(0.10, 0.022, 12, 24);
+    for (let k = 0; k < 24; k++) {
+      const link = new THREE.Mesh(linkGeo, goldMat);
+      link.position.y = R + 0.38 + k * 0.16;
+      link.rotation.y = (k % 2 === 0) ? 0 : Math.PI / 2;
+      chainGroup.add(link);
+    }
+    this.discoGroup.add(chainGroup);
 
     this.scene.add(this.discoGroup);
 
-    // Load disco_ball.glb using GLTFLoader
-    const loader = new GLTFLoader();
-    const basePath = import.meta.env.BASE_URL || './';
-    const cleanBase = basePath.endsWith('/') ? basePath : basePath + '/';
-    const modelUrl = `${cleanBase}models/disco_ball.glb`;
+    // Visible immediately from frame 0
+    this.spinPivot.scale.set(1, 1, 1);
+    this.isModelLoaded = true;
 
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        try {
-          const model = gltf.scene;
-
-          const sphereMesh = model.getObjectByName('Base_Sphere_DiscoBall_0');
-          const chainMesh = model.getObjectByName('Chain_Metal_0');
-          
-          const sphereBox = sphereMesh ? new THREE.Box3().setFromObject(sphereMesh) : new THREE.Box3().setFromObject(model);
-          const chainBox = chainMesh ? new THREE.Box3().setFromObject(chainMesh) : null;
-          console.log('SPHERE BOX:', sphereBox);
-          console.log('CHAIN BOX:', chainBox);
-
-          // Center on sphere
-          const sphereCenter = new THREE.Vector3();
-          sphereBox.getCenter(sphereCenter);
-          const sphereSize = new THREE.Vector3();
-          sphereBox.getSize(sphereSize);
-
-          const radius = Math.max(sphereSize.x, sphereSize.y, sphereSize.z) * 0.5;
-          const targetScale = 1.72 / (radius || 1.0);
-
-          // Container for centering
-          const innerGroup = new THREE.Group();
-          model.position.set(-sphereCenter.x, -sphereCenter.y, -sphereCenter.z);
-          innerGroup.add(model);
-          innerGroup.scale.setScalar(targetScale);
-
-          // Check if mobile for camera/distance
-          const isMobile = window.innerWidth < 768;
-          this.camera.position.set(0, 0, isMobile ? 10.5 : 7.8);
-          this.discoGroup.position.set(0, isMobile ? 0.35 : 0.65, 0);
-
-          // Apply authentic silver mirror & gold brass PBR shaders
-          model.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-
-              const name = child.name || '';
-              const matName = child.material?.name || '';
-
-              if (name.includes('Reflective') || matName.includes('Reflective')) {
-                // The 131,000 genuine square mirror facets: brilliant silver chrome reflections!
-                child.material = new THREE.MeshStandardMaterial({
-                  color: new THREE.Color(0xfcfdff),
-                  metalness: 0.96,
-                  roughness: 0.12,
-                  envMapIntensity: 2.6
-                });
-              } else if (name.includes('Fix') || name.includes('Chain') || matName.includes('Metal')) {
-                // Polished gold brass chain and mounting hook
-                child.material = new THREE.MeshStandardMaterial({
-                  color: new THREE.Color(0xe5ba42),
-                  metalness: 0.95,
-                  roughness: 0.20,
-                  envMapIntensity: 2.2
-                });
-              } else if (name.includes('Sphere') || matName.includes('DiscoBall')) {
-                // Base sphere behind the mirror tiles
-                child.material = new THREE.MeshStandardMaterial({
-                  color: new THREE.Color(0x282436),
-                  metalness: 0.5,
-                  roughness: 0.7
-                });
-              }
-            }
-          });
-
-          // Animate model entry with smooth pop-in
-          innerGroup.scale.set(0.001, 0.001, 0.001);
-          this.spinPivot.add(innerGroup);
-
-          gsap.to(innerGroup.scale, {
-            x: targetScale,
-            y: targetScale,
-            z: targetScale,
-            duration: 0.7,
-            ease: 'back.out(1.5)'
-          });
-
-          this.gltfModel = innerGroup;
-          this.isModelLoaded = true;
-
-          // Fill progress bar smoothly once loaded
-          if (this.progressBar) {
-            this.progressBar.style.transition = 'width 0.4s ease-out';
-            this.progressBar.style.width = '100%';
-          }
-          console.log('✅ Real 3D GLTF Disco Ball loaded with silver mirror PBR facets!');
-        } catch (err) {
-          console.error('Error setting up GLTF disco ball:', err);
+    // Fill progress bar smoothly
+    if (this.progressBar) {
+      this.progressBar.style.width = '0%';
+      setTimeout(() => {
+        if (this.progressBar) {
+          this.progressBar.style.transition = 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+          this.progressBar.style.width = '100%';
         }
-      },
-      (xhr) => {
-        if (xhr.total > 0 && this.progressBar) {
-          const percent = (xhr.loaded / xhr.total) * 100;
-          this.progressBar.style.width = `${Math.min(95, percent)}%`;
-        }
-      },
-      (err) => {
-        console.error('GLTF load error:', err);
-      }
-    );
+      }, 50);
+    }
+    console.log('✅ Instant Thousand-Facet Mirror Disco Ball loaded on Frame 0!');
   }
 
   bindEvents() {
