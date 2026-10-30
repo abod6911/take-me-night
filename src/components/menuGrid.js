@@ -44,7 +44,10 @@ export class MenuGrid {
                 src="${dish.image}" 
                 alt="${dish.name}" 
                 class="w-full h-full object-cover rounded-full"
-                loading="eager"
+                loading="lazy"
+                decoding="async"
+                width="200"
+                height="200"
                 onerror="this.onerror=null; this.src='./dishes/${dish.id}.png';"
               />
             </div>
@@ -146,16 +149,29 @@ export class MenuGrid {
   setupCardMicroInteractions() {
     const cards = document.querySelectorAll('.menu-card-front');
     cards.forEach(card => {
+      let rect = null;
+      let rafId = null;
+
+      card.addEventListener('mouseenter', () => {
+        rect = card.getBoundingClientRect();
+      }, { passive: true });
+
       card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
+        if (!rect) rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        card.style.transform = `perspective(1000px) rotateX(${-y * 0.02}deg) rotateY(${x * 0.02}deg) translateY(-2px)`;
-      });
+
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          card.style.transform = `perspective(1000px) rotateX(${-y * 0.015}deg) rotateY(${x * 0.015}deg) translateY(-2px)`;
+        });
+      }, { passive: true });
 
       card.addEventListener('mouseleave', () => {
+        if (rafId) cancelAnimationFrame(rafId);
         card.style.transform = '';
-      });
+        rect = null;
+      }, { passive: true });
     });
   }
 }

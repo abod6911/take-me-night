@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 
 export class Preloader {
-  constructor(onComplete) {
+  constructor(onComplete, onTransitionStart) {
     this.onComplete = onComplete;
+    this.onTransitionStart = onTransitionStart;
     this.container = document.getElementById('preloader');
     this.canvas = document.getElementById('preloader-canvas');
     this.neonBadge = document.getElementById('preloader-neon-badge');
@@ -424,6 +425,7 @@ export class Preloader {
   igniteNight() {
     this.isTriggered = true;
     if (this.autoTimer) clearTimeout(this.autoTimer);
+    if (this.onTransitionStart) this.onTransitionStart();
 
     const tl = gsap.timeline({
       onComplete: () => this.finish()
@@ -474,6 +476,7 @@ export class Preloader {
 
   forceFinish() {
     if (this.autoTimer) clearTimeout(this.autoTimer);
+    if (this.onTransitionStart) this.onTransitionStart();
     gsap.killTweensOf(this.camera.position);
     if (this.spinPivot) gsap.killTweensOf(this.spinPivot.rotation);
     if (this.container) {

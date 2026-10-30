@@ -9,15 +9,11 @@ varying vec3 vNormal;
 varying vec3 vPosition;
 varying float vElevation;
 
-// Multi-wave sinusoidal and undulating cloth displacement
+// Primary undulating cloth displacement
 float getElevation(vec2 pos) {
-  float freq1 = 0.35;
-  float freq2 = 0.45;
-  float freq3 = 0.70;
-  
-  float wave1 = sin(pos.x * freq1 + uTime * 1.1 + pos.y * 0.22) * 0.70;
-  float wave2 = cos(pos.y * freq2 - uTime * 0.85 + pos.x * 0.26) * 0.52;
-  float wave3 = sin((pos.x + pos.y) * freq3 + uTime * 1.35) * 0.32;
+  float wave1 = sin(pos.x * 0.35 + uTime * 1.1 + pos.y * 0.22) * 0.70;
+  float wave2 = cos(pos.y * 0.45 - uTime * 0.85 + pos.x * 0.26) * 0.52;
+  float wave3 = sin((pos.x + pos.y) * 0.70 + uTime * 1.35) * 0.32;
   
   // Mouse reactive wave
   float distToMouse = length(pos - uMouse * 6.0);
@@ -29,6 +25,14 @@ float getElevation(vec2 pos) {
   return wave1 + wave2 + wave3 + mouseRipple + scrollWave;
 }
 
+// Optimized normal elevation function (eliminates redundant exponential evaluations)
+float getNormalElevation(vec2 pos) {
+  float wave1 = sin(pos.x * 0.35 + uTime * 1.1 + pos.y * 0.22) * 0.70;
+  float wave2 = cos(pos.y * 0.45 - uTime * 0.85 + pos.x * 0.26) * 0.52;
+  float wave3 = sin((pos.x + pos.y) * 0.70 + uTime * 1.35) * 0.32;
+  return wave1 + wave2 + wave3;
+}
+
 void main() {
   vUv = uv;
   vec3 pos = position;
@@ -37,12 +41,13 @@ void main() {
   pos.z += elevation;
   vElevation = elevation;
   
-  // Calculate dynamic surface normals via finite differences
+  // Dynamic surface normals computed with high efficiency
   float eps = 0.04;
-  float elevX = getElevation(pos.xy + vec2(eps, 0.0));
-  float elevY = getElevation(pos.xy + vec2(0.0, eps));
-  vec3 dX = vec3(eps, 0.0, elevX - elevation);
-  vec3 dY = vec3(0.0, eps, elevY - elevation);
+  float baseElev = getNormalElevation(pos.xy);
+  float elevX = getNormalElevation(pos.xy + vec2(eps, 0.0));
+  float elevY = getNormalElevation(pos.xy + vec2(0.0, eps));
+  vec3 dX = vec3(eps, 0.0, elevX - baseElev);
+  vec3 dY = vec3(0.0, eps, elevY - baseElev);
   vec3 computedNormal = normalize(cross(dX, dY));
   
   vNormal = normalMatrix * computedNormal;

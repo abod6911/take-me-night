@@ -176,20 +176,38 @@ export class HeroShowcase {
   }
 
   setupInteractiveInteractions() {
-    window.addEventListener('mousemove', (e) => {
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let isTicking = false;
+
+    const onTick = () => {
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+
       const activePlate = this.plates[this.currentIndex];
-      if (!activePlate) return;
+      if (activePlate) {
+        const disc = activePlate.querySelector('.plate-disc');
+        if (disc) {
+          disc.style.transform = `perspective(800px) rotateY(${currentX * 12}deg) rotateX(${-currentY * 12}deg)`;
+        }
+      }
 
-      const normX = (e.clientX / window.innerWidth) - 0.5;
-      const normY = (e.clientY / window.innerHeight) - 0.5;
+      if (Math.abs(targetX - currentX) > 0.0005 || Math.abs(targetY - currentY) > 0.0005) {
+        requestAnimationFrame(onTick);
+      } else {
+        isTicking = false;
+      }
+    };
 
-      gsap.to(activePlate, {
-        rotationY: normX * 10,
-        rotationX: -normY * 10,
-        duration: 0.6,
-        ease: 'power1.out',
-        overwrite: 'auto'
-      });
-    });
+    window.addEventListener('pointermove', (e) => {
+      targetX = (e.clientX / window.innerWidth) - 0.5;
+      targetY = (e.clientY / window.innerHeight) - 0.5;
+      if (!isTicking) {
+        isTicking = true;
+        requestAnimationFrame(onTick);
+      }
+    }, { passive: true });
   }
 }

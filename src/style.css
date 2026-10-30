@@ -304,6 +304,8 @@ body::-webkit-scrollbar-corner {
   display: flex;
   white-space: nowrap;
   width: max-content;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Centerpiece Container */
@@ -432,7 +434,8 @@ body::-webkit-scrollbar-corner {
   overflow: hidden;
   background-color: #111111;
   box-shadow: 0 35px 60px rgba(0, 0, 0, 0.85);
-  transition: transform 0.3s ease-out;
+  will-change: transform;
+  transform: translateZ(0);
   cursor: grab;
 }
 
@@ -492,6 +495,9 @@ body::-webkit-scrollbar-corner {
 .menu-card-wrapper {
   position: relative;
   width: 100%;
+  contain: layout style;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .menu-card-backing {
@@ -520,6 +526,8 @@ body::-webkit-scrollbar-corner {
   align-items: center;
   gap: 1.8rem;
   z-index: 10;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .menu-plate-col {

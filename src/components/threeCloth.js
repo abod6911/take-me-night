@@ -12,6 +12,9 @@ export class ThreeCloth {
     this.lastScrollY = window.scrollY;
     this.paletteShift = 0.0;
     this.targetPaletteShift = 0.0;
+    this.isRunning = false;
+    this.lastWidth = window.innerWidth;
+    this.lastHeight = window.innerHeight;
 
     this.init();
     this.bindEvents();
@@ -37,8 +40,13 @@ export class ThreeCloth {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.container.appendChild(this.renderer.domElement);
 
-    // Large Plane Geometry to guarantee 100% viewport coverage at all times (Zero black horizon)
-    const geometry = new THREE.PlaneGeometry(36, 32, 180, 160);
+    // High performance responsive geometry:
+    // Mobile: 100x90 segments (9k vertices) - crisp on high-DPI screens with 68% fewer calculations
+    // Desktop: 140x120 segments (16.8k vertices) - ultra-smooth organic cloth folds
+    const isMobile = window.innerWidth < 768;
+    const segX = isMobile ? 100 : 140;
+    const segY = isMobile ? 90 : 120;
+    const geometry = new THREE.PlaneGeometry(36, 32, segX, segY);
 
     this.uniforms = {
       uTime: { value: 0 },
@@ -73,15 +81,27 @@ export class ThreeCloth {
     this.scene.add(dirLight);
 
     this.clock = new THREE.Clock();
+    this.clock.stop(); // Idle until preloader completes or transitions
+  }
+
+  start() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    this.clock.start();
+  }
+
+  pause() {
+    this.isRunning = false;
+    this.clock.stop();
   }
 
   bindEvents() {
-    window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('resize', () => this.onResize(), { passive: true });
 
     window.addEventListener('mousemove', (e) => {
       this.targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    });
+    }, { passive: true });
 
     window.addEventListener('scroll', () => {
       const currentScrollY = window.scrollY;
@@ -89,6 +109,14 @@ export class ThreeCloth {
       this.targetScrollDelta = Math.max(Math.min(delta * 0.35, 3.0), -3.0);
       this.lastScrollY = currentScrollY;
     }, { passive: true });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.pause();
+      } else {
+        this.start();
+      }
+    });
   }
 
   setPaletteShift(val) {
@@ -98,6 +126,16 @@ export class ThreeCloth {
   onResize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
+
+    // Mobile address-bar collapse check (avoids heavy WebGL buffer reallocations on scroll)
+    if (Math.abs(width - this.lastWidth) < 2 && Math.abs(height - this.lastHeight) < 60 && width < 768) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      return;
+    }
+
+    this.lastWidth = width;
+    this.lastHeight = height;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
@@ -106,6 +144,8 @@ export class ThreeCloth {
   }
 
   update() {
+    if (!this.isRunning) return;
+
     const elapsedTime = this.clock.getElapsedTime();
 
     // Smooth interpolations

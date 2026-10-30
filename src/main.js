@@ -25,39 +25,39 @@ class App {
 
   initLenis() {
     this.lenis = new Lenis({
-      duration: 1.25,
+      duration: 1.15,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 1.0,
-      touchMultiplier: 2.0
+      touchMultiplier: 1.8
     });
 
-    // Synchronize Lenis with GSAP ScrollTrigger & Top Progress Bar
+    // Zero-reflow Top Scroll Progress Bar using GPU scaleX
     const progressBar = document.getElementById('scroll-progress-bar');
+    let maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+
+    const updateMaxScroll = () => {
+      maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    };
+
+    window.addEventListener('resize', updateMaxScroll, { passive: true });
+    ScrollTrigger.addEventListener('refresh', updateMaxScroll);
+
     this.lenis.on('scroll', (e) => {
       ScrollTrigger.update();
       if (progressBar) {
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = maxScroll > 0 ? (e.scroll / maxScroll) * 100 : 0;
-        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+        const progress = Math.min(1, Math.max(0, e.scroll / maxScroll));
+        progressBar.style.transform = `scaleX(${progress})`;
       }
     });
-
-    window.addEventListener('scroll', () => {
-      if (progressBar) {
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
-        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
-      }
-    }, { passive: true });
 
     gsap.ticker.add((time) => {
       this.lenis.raf(time * 1000);
     });
 
-    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.lagSmoothing(500, 33);
   }
 
   init3DCloth() {
@@ -75,12 +75,24 @@ class App {
   }
 
   initPreloader() {
-    this.preloader = new Preloader(() => {
-      this.onIntroComplete();
-    });
+    this.preloader = new Preloader(
+      () => {
+        this.onIntroComplete();
+      },
+      () => {
+        if (this.threeCloth) {
+          this.threeCloth.start();
+        }
+      }
+    );
   }
 
   onIntroComplete() {
+    // Start cloth rendering smoothly as preloader dissolves
+    if (this.threeCloth) {
+      this.threeCloth.start();
+    }
+
     // Reveal completed: trigger instant coordinated entrance
     gsap.fromTo('.neon-sign-badge, .vertical-barcode-strip, .hero-ribbon-container, .hero-info-card, .fixed-chrome .nav-pill',
       { opacity: 0, y: 10 },
