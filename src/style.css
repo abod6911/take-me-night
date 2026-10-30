@@ -59,7 +59,68 @@ html, body {
 .border-neon-magenta { border-color: var(--color-neon-magenta); }
 .border-neon-yellow { border-color: var(--color-neon-yellow); }
 
-/* Scrollbar elimination across all elements */
+/* ============================================== */
+/* LUXURY CUSTOM SCROLLBAR (NEON NIGHTLIFE THEME)  */
+/* ============================================== */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #FF14D4 #0B0711;
+}
+
+::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: #0B0711 !important;
+  border-left: 1px solid rgba(255, 20, 212, 0.2);
+}
+
+::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FF14D4 0%, #FFE600 100%) !important;
+  border-radius: 9999px !important;
+  border: 1px solid #0B0711 !important;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.4), 0 0 10px rgba(255, 20, 212, 0.5) !important;
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FF3BF0 0%, #FFF24D 100%) !important;
+  box-shadow: 0 0 16px #FF14D4, 0 0 25px rgba(255, 230, 0, 0.7) !important;
+}
+
+::-webkit-scrollbar-thumb:active,
+html::-webkit-scrollbar-thumb:active,
+body::-webkit-scrollbar-thumb:active {
+  background: #FFE600 !important;
+  box-shadow: 0 0 20px #FFE600 !important;
+}
+
+::-webkit-scrollbar-button,
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner,
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner {
+  background: #0B0711 !important;
+}
+
+/* Scrollbar elimination across designated drawer containers */
 .no-scrollbar::-webkit-scrollbar,
 .cart-drawer-panel::-webkit-scrollbar,
 #cart-items-list::-webkit-scrollbar,

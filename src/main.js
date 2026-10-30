@@ -34,8 +34,24 @@ class App {
       touchMultiplier: 2.0
     });
 
-    // Synchronize Lenis with GSAP ScrollTrigger
-    this.lenis.on('scroll', ScrollTrigger.update);
+    // Synchronize Lenis with GSAP ScrollTrigger & Top Progress Bar
+    const progressBar = document.getElementById('scroll-progress-bar');
+    this.lenis.on('scroll', (e) => {
+      ScrollTrigger.update();
+      if (progressBar) {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = maxScroll > 0 ? (e.scroll / maxScroll) * 100 : 0;
+        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      if (progressBar) {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
+        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+      }
+    }, { passive: true });
 
     gsap.ticker.add((time) => {
       this.lenis.raf(time * 1000);
