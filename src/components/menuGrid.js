@@ -37,14 +37,15 @@ export class MenuGrid {
         <!-- Main Electric Magenta card body -->
         <div class="menu-card-front">
           
-          <!-- Protruding circular black plate overlapping -25px outside left edge -->
+          <!-- Protruding circular black plate overlapping outside left edge -->
           <div class="menu-plate-col">
             <div class="menu-plate-disc">
               <img 
                 src="${dish.image}" 
                 alt="${dish.name}" 
                 class="w-full h-full object-cover rounded-full"
-                loading="lazy"
+                loading="eager"
+                onerror="this.onerror=null; this.src='./dishes/${dish.id}.png';"
               />
             </div>
           </div>

@@ -1,3 +1,9 @@
+// Base path resolution for universal hosting (supports root domains and GitHub Pages subpaths)
+const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || './';
+const cleanBase = BASE.endsWith('/') ? BASE : BASE + '/';
+
+export const resolveDishImg = (filename) => `${cleanBase}dishes/${filename}`;
+
 // TAKE ME NIGHT - 100% Artisanal Gourmet Pizza Menu Data
 export const HERO_DISHES = [
   {
@@ -11,7 +17,7 @@ export const HERO_DISHES = [
     description: 'Black-charred 48h sourdough crust, creamy pugliese burrata, crispy artisanal pepperoni cups, black truffle glaze & neon-hot chili honey.',
     price: 68,
     currency: 'SAR',
-    image: '/dishes/take_me_night.png',
+    image: resolveDishImg('take_me_night.png'),
     badge: 'SIGNATURE'
   },
   {
@@ -25,7 +31,7 @@ export const HERO_DISHES = [
     description: '14-hour hickory-smoked prime beef brisket, aged white cheddar, caramelized bourbon onions, pickled jalapeños & smoky BBQ glaze.',
     price: 74,
     currency: 'SAR',
-    image: '/dishes/smoked_brisket.png',
+    image: resolveDishImg('smoked_brisket.png'),
     badge: 'CHEF CHOICE'
   },
   {
@@ -39,7 +45,7 @@ export const HERO_DISHES = [
     description: 'Chargrilled marinated chicken breast, sun-dried tomatoes, crispy turkey bacon bits, roasted garlic mozzarella & signature house buttermilk ranch drizzle.',
     price: 62,
     currency: 'SAR',
-    image: '/dishes/crazy_ranch.png',
+    image: resolveDishImg('crazy_ranch.png'),
     badge: 'POPULAR'
   },
   {
@@ -53,7 +59,7 @@ export const HERO_DISHES = [
     description: 'San Marzano crushed tomato base, aged fior di latte, double-layered crispy beef pepperoni cups, Parmigiano-Reggiano & wild Sicilian oregano.',
     price: 58,
     currency: 'SAR',
-    image: '/dishes/double_pepperoni.png',
+    image: resolveDishImg('double_pepperoni.png'),
     badge: 'CLASSIC'
   },
   {
@@ -67,7 +73,7 @@ export const HERO_DISHES = [
     description: 'Roasted wild porcini and cremini mushrooms, white truffle cream base, cold-stracciatella burrata, thyme & toasted pine nuts.',
     price: 69,
     currency: 'SAR',
-    image: '/dishes/truffle_burrata.png',
+    image: resolveDishImg('truffle_burrata.png'),
     badge: 'LUXURY'
   },
   {
@@ -81,7 +87,7 @@ export const HERO_DISHES = [
     description: 'Spicy calabrese beef salami, fresh jalapeño rings, crushed red chili flakes, smoked provolone & wildflower hot honey glaze.',
     price: 64,
     currency: 'SAR',
-    image: '/dishes/hot_honey_diablo.png',
+    image: resolveDishImg('hot_honey_diablo.png'),
     badge: 'SPICY'
   }
 ];

@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { HERO_DISHES, SIZE_OPTIONS, CRUST_OPTIONS, EXTRA_DIPS } from '../assets/foodData.js';
+import { HERO_DISHES, SIZE_OPTIONS, CRUST_OPTIONS, EXTRA_DIPS, resolveDishImg } from '../assets/foodData.js';
 
 export class CartDrawer {
   constructor() {
@@ -304,7 +304,7 @@ export class CartDrawer {
         id: 'dip_' + dipId + '_' + Date.now(),
         pizzaId: 'dip_' + dipId,
         name: dipName,
-        image: '/dishes/take_me_night.png',
+        image: resolveDishImg('take_me_night.png'),
         size: '1x Dip Pot',
         crust: 'House Blend',
         dips: [],
@@ -382,7 +382,7 @@ export class CartDrawer {
     // Render Itemized Pizza & Dip Cards with Quantity Stepper Buttons (- / 1 / +)
     this.cartItemsList.innerHTML = this.cart.map((item, idx) => `
       <div class="flex items-center gap-3.5 p-3.5 bg-[#140D20] rounded-2xl border border-white/10 relative group hover:border-neon-magenta/40 transition-colors">
-        <img src="${item.image}" alt="${item.name}" class="w-14 h-14 rounded-xl object-cover shrink-0 border border-neon-magenta/60 shadow-md" />
+        <img src="${item.image}" alt="${item.name}" class="w-14 h-14 rounded-xl object-cover shrink-0 border border-neon-magenta/60 shadow-md" onerror="this.onerror=null; this.src='./dishes/take_me_night.png';" />
         <div class="flex-1 min-w-0">
           <h4 class="font-sans font-black text-white text-sm uppercase tracking-wide truncate leading-tight">
             ${item.name}
