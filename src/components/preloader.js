@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
 
 export class Preloader {
@@ -15,31 +16,25 @@ export class Preloader {
     this.isRunning = true;
     this.autoTimer = null;
     this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    this.isModelLoaded = false;
 
     this.init();
   }
 
   init() {
     this.initThree();
-    this.createDiscoBall();
+    this.createStudioEnvironment();
     this.createSparkleParticles();
+    this.loadGLTFDiscoBall();
     this.bindEvents();
     this.animate();
 
-    // Smooth progress bar over 10 seconds of ambient viewing
-    if (this.progressBar) {
-      this.progressBar.style.transition = 'width 10s linear';
-      requestAnimationFrame(() => {
-        this.progressBar.style.width = '100%';
-      });
-    }
-
-    // Generous 10-second ambient timer so user can enjoy the 3D scene and click/tap when ready
+    // Auto progression after 12 seconds of idle viewing if user does not click
     this.autoTimer = setTimeout(() => {
       if (!this.isTriggered) {
         this.igniteNight();
       }
-    }, 10000);
+    }, 12000);
   }
 
   initThree() {
@@ -49,9 +44,10 @@ export class Preloader {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x07040C);
 
+    const isMobile = this.width < 768;
     const aspect = this.width / this.height;
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-    this.camera.position.set(0, 0, 7.8);
+    this.camera.position.set(0, 0, isMobile ? 11.2 : 7.8);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -62,87 +58,88 @@ export class Preloader {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.35;
+    this.renderer.toneMappingExposure = 1.45;
 
     // Ambient light with atmospheric magenta-purple tint
-    const ambientLight = new THREE.AmbientLight(0x4a2060, 1.4);
+    const ambientLight = new THREE.AmbientLight(0x664488, 2.2);
     this.scene.add(ambientLight);
 
     // Hemisphere light for global silver facet illumination
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x221133, 2.2);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x221133, 2.6);
     this.scene.add(hemiLight);
 
     // Key directional light illuminating front facets
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.5);
     keyLight.position.set(2, 4, 6);
     this.scene.add(keyLight);
 
-    const backLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    // Front fill light illuminating mirror tiles across the equator
+    const fillLight = new THREE.DirectionalLight(0xf5f8ff, 2.2);
+    fillLight.position.set(0, 0, 7.5);
+    this.scene.add(fillLight);
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 1.8);
     backLight.position.set(-3, -2, -4);
     this.scene.add(backLight);
 
     // Orbiting PointLights for dazzling colored glints
     // 1. Electric Magenta (#FF14D4)
-    this.lightMagenta = new THREE.PointLight(0xFF14D4, 8.0, 26);
+    this.lightMagenta = new THREE.PointLight(0xFF14D4, 9.0, 28);
     this.lightMagenta.position.set(-4.0, 2.0, 4);
     this.scene.add(this.lightMagenta);
 
     // 2. Laser Yellow (#FFE600)
-    this.lightYellow = new THREE.PointLight(0xFFE600, 7.0, 26);
+    this.lightYellow = new THREE.PointLight(0xFFE600, 8.0, 28);
     this.lightYellow.position.set(4.0, -1.5, 3.5);
     this.scene.add(this.lightYellow);
 
     // 3. Neon Cyan (#00E5FF)
-    this.lightCyan = new THREE.PointLight(0x00E5FF, 5.0, 22);
+    this.lightCyan = new THREE.PointLight(0x00E5FF, 6.0, 24);
     this.lightCyan.position.set(-1.0, -3.5, 4.5);
     this.scene.add(this.lightCyan);
 
     // 4. White Specular Key
-    this.lightWhite = new THREE.PointLight(0xFFFFFF, 5.5, 20);
+    this.lightWhite = new THREE.PointLight(0xFFFFFF, 6.5, 22);
     this.lightWhite.position.set(0.5, 3.5, 4.0);
     this.scene.add(this.lightWhite);
   }
 
-  createDiscoBall() {
-    this.discoGroup = new THREE.Group();
-    // Position disco ball commanding center (centered at ~0.65 in viewport)
-    this.discoGroup.position.set(0, 0.65, 0);
+  createStudioEnvironment() {
+    try {
+      const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+      pmremGenerator.compileEquirectangularShader();
 
-    // Faceted Mirror Sphere Geometry (54 x 32 creates sharp, glittering square mirrored facets)
-    const sphereGeo = new THREE.SphereGeometry(1.72, 54, 32);
-    const sphereMat = new THREE.MeshStandardMaterial({
-      color: 0xeeeeee,
-      metalness: 0.94,
-      roughness: 0.11,
-      flatShading: true
-    });
-    this.discoBall = new THREE.Mesh(sphereGeo, sphereMat);
-    this.discoGroup.add(this.discoBall);
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x0c0814);
 
-    // Metallic Brass Cap, Ring and Suspension Cable stretching up
-    const capGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.18, 32);
-    const capMat = new THREE.MeshStandardMaterial({
-      color: 0xd4af37,
-      metalness: 0.95,
-      roughness: 0.18
-    });
-    const cap = new THREE.Mesh(capGeo, capMat);
-    cap.position.y = 1.80;
-    this.discoGroup.add(cap);
+      // Studio light panels simulating softboxes and neon rim lights
+      const addPanel = (color, x, y, z, width, height) => {
+        const mesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(width, height),
+          new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })
+        );
+        mesh.position.set(x, y, z);
+        mesh.lookAt(0, 0, 0);
+        envScene.add(mesh);
+      };
 
-    const ringGeo = new THREE.TorusGeometry(0.18, 0.035, 16, 32);
-    const ring = new THREE.Mesh(ringGeo, capMat);
-    ring.position.y = 2.0;
-    ring.rotation.y = Math.PI / 4;
-    this.discoGroup.add(ring);
+      // Bright white studio softbox reflection panels (gives mirror tiles pure silver shine!)
+      addPanel(0xffffff, 0, 8, 4, 10, 8);      // Overhead main softbox
+      addPanel(0xf0f4ff, -7, 2, 5, 6, 12);    // Left silver fill
+      addPanel(0xf0f4ff, 7, 2, 5, 6, 12);     // Right silver fill
+      addPanel(0xffffff, 0, -6, 4, 8, 4);     // Bottom silver bounce
 
-    const cableGeo = new THREE.CylinderGeometry(0.015, 0.015, 14, 16);
-    const cableMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const cable = new THREE.Mesh(cableGeo, cableMat);
-    cable.position.y = 9.0;
-    this.discoGroup.add(cable);
+      // Colored neon accents reflecting off mirror edges
+      addPanel(0xFF14D4, -6, 4, -4, 5, 8);    // Back magenta rim
+      addPanel(0xFFE600, 6, -3, -4, 5, 8);    // Back yellow rim
+      addPanel(0x00E5FF, 0, 6, -6, 8, 4);     // Top cyan rim
 
-    this.scene.add(this.discoGroup);
+      const renderTarget = pmremGenerator.fromScene(envScene);
+      this.scene.environment = renderTarget.texture;
+      pmremGenerator.dispose();
+    } catch (e) {
+      console.warn('Could not generate studio reflection environment:', e);
+    }
   }
 
   createSparkleParticles() {
@@ -222,6 +219,141 @@ export class Preloader {
     return new THREE.CanvasTexture(canvas);
   }
 
+  loadGLTFDiscoBall() {
+    this.discoGroup = new THREE.Group();
+    this.discoGroup.position.set(0, 0.65, 0);
+
+    // Spinning pivot group
+    this.spinPivot = new THREE.Group();
+    this.discoGroup.add(this.spinPivot);
+    this.discoBall = this.spinPivot;
+
+    // Cable extending from top of model to ceiling
+    const cableGeo = new THREE.CylinderGeometry(0.012, 0.012, 12, 16);
+    const cableMat = new THREE.MeshStandardMaterial({
+      color: 0xcccccc,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    this.cable = new THREE.Mesh(cableGeo, cableMat);
+    this.cable.position.y = 7.5;
+    this.discoGroup.add(this.cable);
+
+    this.scene.add(this.discoGroup);
+
+    // Load disco_ball.glb using GLTFLoader
+    const loader = new GLTFLoader();
+    const basePath = import.meta.env.BASE_URL || './';
+    const cleanBase = basePath.endsWith('/') ? basePath : basePath + '/';
+    const modelUrl = `${cleanBase}models/disco_ball.glb`;
+
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        try {
+          const model = gltf.scene;
+
+          const sphereMesh = model.getObjectByName('Base_Sphere_DiscoBall_0');
+          const chainMesh = model.getObjectByName('Chain_Metal_0');
+          
+          const sphereBox = sphereMesh ? new THREE.Box3().setFromObject(sphereMesh) : new THREE.Box3().setFromObject(model);
+          const chainBox = chainMesh ? new THREE.Box3().setFromObject(chainMesh) : null;
+          console.log('SPHERE BOX:', sphereBox);
+          console.log('CHAIN BOX:', chainBox);
+
+          // Center on sphere
+          const sphereCenter = new THREE.Vector3();
+          sphereBox.getCenter(sphereCenter);
+          const sphereSize = new THREE.Vector3();
+          sphereBox.getSize(sphereSize);
+
+          const radius = Math.max(sphereSize.x, sphereSize.y, sphereSize.z) * 0.5;
+          const targetScale = 1.72 / (radius || 1.0);
+
+          // Container for centering
+          const innerGroup = new THREE.Group();
+          model.position.set(-sphereCenter.x, -sphereCenter.y, -sphereCenter.z);
+          innerGroup.add(model);
+          innerGroup.scale.setScalar(targetScale);
+
+          // Check if mobile for camera/distance
+          const isMobile = window.innerWidth < 768;
+          this.camera.position.set(0, 0, isMobile ? 10.5 : 7.8);
+          this.discoGroup.position.set(0, isMobile ? 0.35 : 0.65, 0);
+
+          // Apply authentic silver mirror & gold brass PBR shaders
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+
+              const name = child.name || '';
+              const matName = child.material?.name || '';
+
+              if (name.includes('Reflective') || matName.includes('Reflective')) {
+                // The 131,000 genuine square mirror facets: brilliant silver chrome reflections!
+                child.material = new THREE.MeshStandardMaterial({
+                  color: new THREE.Color(0xfcfdff),
+                  metalness: 0.96,
+                  roughness: 0.12,
+                  envMapIntensity: 2.6
+                });
+              } else if (name.includes('Fix') || name.includes('Chain') || matName.includes('Metal')) {
+                // Polished gold brass chain and mounting hook
+                child.material = new THREE.MeshStandardMaterial({
+                  color: new THREE.Color(0xe5ba42),
+                  metalness: 0.95,
+                  roughness: 0.20,
+                  envMapIntensity: 2.2
+                });
+              } else if (name.includes('Sphere') || matName.includes('DiscoBall')) {
+                // Base sphere behind the mirror tiles
+                child.material = new THREE.MeshStandardMaterial({
+                  color: new THREE.Color(0x282436),
+                  metalness: 0.5,
+                  roughness: 0.7
+                });
+              }
+            }
+          });
+
+          // Animate model entry with smooth pop-in
+          innerGroup.scale.set(0.001, 0.001, 0.001);
+          this.spinPivot.add(innerGroup);
+
+          gsap.to(innerGroup.scale, {
+            x: targetScale,
+            y: targetScale,
+            z: targetScale,
+            duration: 0.7,
+            ease: 'back.out(1.5)'
+          });
+
+          this.gltfModel = innerGroup;
+          this.isModelLoaded = true;
+
+          // Fill progress bar smoothly once loaded
+          if (this.progressBar) {
+            this.progressBar.style.transition = 'width 0.4s ease-out';
+            this.progressBar.style.width = '100%';
+          }
+          console.log('✅ Real 3D GLTF Disco Ball loaded with silver mirror PBR facets!');
+        } catch (err) {
+          console.error('Error setting up GLTF disco ball:', err);
+        }
+      },
+      (xhr) => {
+        if (xhr.total > 0 && this.progressBar) {
+          const percent = (xhr.loaded / xhr.total) * 100;
+          this.progressBar.style.width = `${Math.min(95, percent)}%`;
+        }
+      },
+      (err) => {
+        console.error('GLTF load error:', err);
+      }
+    );
+  }
+
   bindEvents() {
     window.addEventListener('resize', () => this.onResize());
 
@@ -258,6 +390,11 @@ export class Preloader {
     this.width = window.innerWidth;
     this.height = window.innerHeight;
     this.camera.aspect = this.width / this.height;
+    const isMobile = this.width < 768;
+    this.camera.position.set(0, 0, isMobile ? 11.2 : 7.8);
+    if (this.discoGroup) {
+      this.discoGroup.position.set(0, isMobile ? 0.35 : 0.65, 0);
+    }
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height);
   }
@@ -271,8 +408,8 @@ export class Preloader {
 
     if (!this.isTriggered) {
       // Gentle constant rotation of mirror ball
-      if (this.discoBall) {
-        this.discoBall.rotation.y += 0.009;
+      if (this.spinPivot) {
+        this.spinPivot.rotation.y += 0.009;
       }
       // Slight atmospheric sway
       if (this.discoGroup) {
@@ -309,8 +446,8 @@ export class Preloader {
     });
 
     // 1. Disco Ball spins rapidly into a glittering blur
-    if (this.discoBall) {
-      tl.to(this.discoBall.rotation, {
+    if (this.spinPivot) {
+      tl.to(this.spinPivot.rotation, {
         y: '+=14',
         duration: 0.75,
         ease: 'power2.in'
@@ -354,7 +491,7 @@ export class Preloader {
   forceFinish() {
     if (this.autoTimer) clearTimeout(this.autoTimer);
     gsap.killTweensOf(this.camera.position);
-    if (this.discoBall) gsap.killTweensOf(this.discoBall.rotation);
+    if (this.spinPivot) gsap.killTweensOf(this.spinPivot.rotation);
     if (this.container) {
       gsap.to(this.container, {
         opacity: 0,
