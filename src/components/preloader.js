@@ -1,10 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
-
-// Base URL resolution for universal hosting (GitHub Pages & custom domains)
-const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || './';
-const cleanBase = BASE.endsWith('/') ? BASE : BASE + '/';
 
 export class Preloader {
   constructor(onComplete, onTransitionStart) {
@@ -22,7 +17,6 @@ export class Preloader {
     this.autoTimer = null;
     this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
     this.isModelLoaded = false;
-    this.gltfModel = null;
 
     this.init();
   }
@@ -32,7 +26,6 @@ export class Preloader {
     this.createStudioEnvironment();
     this.createSparkleParticles();
     this.createInstancedDiscoBall();
-    this.loadGltfModel();
     this.bindEvents();
     this.animate();
 
@@ -349,82 +342,6 @@ export class Preloader {
       }, 50);
     }
     console.log('✅ Instant Thousand-Facet Mirror Disco Ball loaded on Frame 0!');
-  }
-
-  loadGltfModel() {
-    const loader = new GLTFLoader();
-    const modelUrl = `${cleanBase}models/disco_ball.glb`;
-
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        const model = gltf.scene;
-        console.log('✨ Authentic 3D GLTF Disco Ball Model Loaded via GLTFLoader!');
-
-        // Upgrade GLTF PBR materials for maximum diamond mirror shine
-        model.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            
-            if (child.name.includes('Reflective') || (child.material && child.material.name === 'Reflective')) {
-              child.material = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0.98,
-                roughness: 0.03,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.02,
-                envMapIntensity: 4.5
-              });
-            } else if (child.name.includes('Metal') || child.name.includes('Chain') || child.name.includes('Fix') || (child.material && child.material.name === 'Metal')) {
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0xe5ba42,
-                metalness: 0.95,
-                roughness: 0.18,
-                envMapIntensity: 2.8
-              });
-            } else if (child.name.includes('Base_Sphere') || (child.material && child.material.name === 'DiscoBall')) {
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0x14101e,
-                roughness: 0.9,
-                metalness: 0.1
-              });
-            }
-          }
-        });
-
-        // The sphere in disco_ball.glb is naturally centered at (0, 0, 0) with radius 12.27
-        const sphereRadius = 12.27;
-        const targetRadius = 1.72;
-        const targetScale = targetRadius / sphereRadius;
-
-        this.gltfModel = model;
-
-        // Graceful cross-fade: add GLTF model into spinPivot and fade out procedural tiles
-        model.scale.set(0.01, 0.01, 0.01);
-        this.spinPivot.add(model);
-
-        gsap.to(model.scale, {
-          x: targetScale,
-          y: targetScale,
-          z: targetScale,
-          duration: 0.6,
-          ease: 'power2.out',
-          onComplete: () => {
-            // Hide procedural fallback meshes once GLTF model is fully active
-            if (this.instancedMesh) this.instancedMesh.visible = false;
-            if (this.proceduralCore) this.proceduralCore.visible = false;
-            if (this.proceduralHook) this.proceduralHook.visible = false;
-            if (this.proceduralLoop) this.proceduralLoop.visible = false;
-            if (this.proceduralChain) this.proceduralChain.visible = false;
-          }
-        });
-      },
-      undefined,
-      (err) => {
-        console.warn('GLTF disco ball loading fallback to high-quality procedural instanced mesh:', err);
-      }
-    );
   }
 
   bindEvents() {
