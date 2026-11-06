@@ -17,45 +17,61 @@ void main() {
   vec2 gridFloor = floor(uvGrid);
   float check = mod(gridFloor.x + gridFloor.y, 2.0);
   
-  // Brand color palette:
-  // Crisp Starlight Off-White: #F8F6FA
-  vec3 colorCream = vec3(0.9725, 0.9647, 0.9804);
+  // Luxury Color Palette:
+  // Crisp Starlight Pearl Off-White: #FBF9FE
+  vec3 colorCream = vec3(0.984, 0.976, 0.996);
   
-  // Deep Midnight Black (Hero): #0B0711
-  vec3 colorMidnight = vec3(0.0431, 0.0275, 0.0667);
+  // Deep Midnight Obsidian Velvet: #0B0713
+  vec3 colorMidnight = vec3(0.043, 0.027, 0.075);
   
-  // Electric Magenta (Menu): #D411B8
-  vec3 colorMagenta = vec3(0.8314, 0.0667, 0.7216);
+  // Luminous Electric Magenta (Menu): #E012C4
+  vec3 colorMagenta = vec3(0.878, 0.071, 0.769);
   
   // Smoothly interpolate dark tile color
   vec3 darkTileColor = mix(colorMidnight, colorMagenta, clamp(uPaletteShift, 0.0, 1.0));
   
   // Base tile pattern
-  vec3 baseColor = (check > 0.5) ? darkTileColor : colorCream;
+  bool isDarkTile = (check > 0.5);
+  vec3 baseColor = isDarkTile ? darkTileColor : colorCream;
   
-  // Directional lighting from top-right
+  // Lighting vectors
   vec3 norm = normalize(vNormal);
-  vec3 lightDir = normalize(vec3(0.3, 0.8, 1.1));
-  float diff = max(dot(norm, lightDir), 0.0);
+  vec3 viewDir = normalize(-vPosition);
+  vec3 lightDir = normalize(vec3(0.35, 0.85, 1.15));
+  vec3 halfDir = normalize(lightDir + viewDir);
   
-  // Surface illumination
-  float ambient = 0.70;
-  float lighting = ambient + diff * 0.30;
+  // Diffuse illumination
+  float diff = max(dot(norm, lightDir), 0.0);
+  float ambient = 0.68;
+  float lighting = ambient + diff * 0.32;
   vec3 litColor = baseColor * lighting;
   
-  // Deep Trough Ambient Occlusion (Valley Darkening) with subtle purple-pink undertone
-  float valleyOcclusion = smoothstep(-1.2, 0.6, -vElevation);
-  vec3 shadowTint = vec3(0.03, 0.008, 0.04);
-  vec3 shadedColor = mix(litColor, shadowTint, valleyOcclusion * 0.48);
+  // Luxury Satin Specular Sheen (Glints on cloth wave crests)
+  float specPow = isDarkTile ? 36.0 : 24.0;
+  float spec = pow(max(dot(norm, halfDir), 0.0), specPow);
+  vec3 specColor = isDarkTile ? vec3(0.95, 0.35, 0.9) * 0.45 : vec3(1.0, 0.98, 0.95) * 0.38;
+  litColor += specColor * spec;
   
-  // Subtle cloth fabric weave noise
-  float weave = sin(vUv.x * 650.0) * sin(vUv.y * 650.0) * 0.018;
+  // Iridescent Velvet Fresnel Rim Lighting (Neon rim glow on wave edges)
+  float fresnel = pow(1.0 - max(dot(norm, viewDir), 0.0), 3.0);
+  vec3 rimGlow = isDarkTile 
+    ? mix(vec3(0.88, 0.07, 0.77), vec3(1.0, 0.9, 0.0), clamp(uPaletteShift, 0.0, 1.0) * 0.3) * (fresnel * 0.55)
+    : vec3(0.95, 0.92, 1.0) * (fresnel * 0.25);
+  litColor += rimGlow;
+  
+  // Deep Trough Ambient Occlusion (Valley Darkening with subtle midnight-violet undertone)
+  float valleyOcclusion = smoothstep(-1.2, 0.55, -vElevation);
+  vec3 shadowTint = vec3(0.02, 0.006, 0.035);
+  vec3 shadedColor = mix(litColor, shadowTint, valleyOcclusion * 0.52);
+  
+  // Micro-silk fabric weave texture
+  float weave = (sin(vUv.x * 700.0) * sin(vUv.y * 700.0)) * 0.016;
   shadedColor += weave;
   
-  // Atmospheric edge vignette
+  // Cinematic vignette
   vec2 screenUv = gl_FragCoord.xy / uResolution;
-  float vig = 1.0 - smoothstep(0.4, 1.45, length(screenUv - 0.5) * 1.35);
-  shadedColor *= mix(0.88, 1.0, vig);
+  float vig = 1.0 - smoothstep(0.42, 1.48, length(screenUv - 0.5) * 1.35);
+  shadedColor *= mix(0.86, 1.0, vig);
 
   gl_FragColor = vec4(shadedColor, 1.0);
 }

@@ -1,5 +1,10 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
+
+// Base URL resolution for universal hosting (GitHub Pages & custom domains)
+const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || './';
+const cleanBase = BASE.endsWith('/') ? BASE : BASE + '/';
 
 export class Preloader {
   constructor(onComplete, onTransitionStart) {
@@ -17,6 +22,7 @@ export class Preloader {
     this.autoTimer = null;
     this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
     this.isModelLoaded = false;
+    this.gltfModel = null;
 
     this.init();
   }
@@ -26,6 +32,7 @@ export class Preloader {
     this.createStudioEnvironment();
     this.createSparkleParticles();
     this.createInstancedDiscoBall();
+    this.loadGltfModel();
     this.bindEvents();
     this.animate();
 
@@ -58,48 +65,48 @@ export class Preloader {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.45;
+    this.renderer.toneMappingExposure = 1.6;
 
     // Ambient light with atmospheric magenta-purple tint
-    const ambientLight = new THREE.AmbientLight(0x664488, 2.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
     this.scene.add(ambientLight);
 
     // Hemisphere light for global silver facet illumination
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x221133, 2.6);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x332244, 3.2);
     this.scene.add(hemiLight);
 
     // Key directional light illuminating front facets
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
     keyLight.position.set(2, 4, 6);
     this.scene.add(keyLight);
 
     // Front fill light illuminating mirror tiles across the equator
-    const fillLight = new THREE.DirectionalLight(0xf5f8ff, 2.2);
+    const fillLight = new THREE.DirectionalLight(0xf5f8ff, 2.8);
     fillLight.position.set(0, 0, 7.5);
     this.scene.add(fillLight);
 
-    const backLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    const backLight = new THREE.DirectionalLight(0xffffff, 2.2);
     backLight.position.set(-3, -2, -4);
     this.scene.add(backLight);
 
     // Orbiting PointLights for dazzling colored glints
     // 1. Electric Magenta (#FF14D4)
-    this.lightMagenta = new THREE.PointLight(0xFF14D4, 9.0, 28);
+    this.lightMagenta = new THREE.PointLight(0xFF14D4, 11.0, 32);
     this.lightMagenta.position.set(-4.0, 2.0, 4);
     this.scene.add(this.lightMagenta);
 
     // 2. Laser Yellow (#FFE600)
-    this.lightYellow = new THREE.PointLight(0xFFE600, 8.0, 28);
+    this.lightYellow = new THREE.PointLight(0xFFE600, 10.0, 32);
     this.lightYellow.position.set(4.0, -1.5, 3.5);
     this.scene.add(this.lightYellow);
 
     // 3. Neon Cyan (#00E5FF)
-    this.lightCyan = new THREE.PointLight(0x00E5FF, 6.0, 24);
+    this.lightCyan = new THREE.PointLight(0x00E5FF, 8.5, 28);
     this.lightCyan.position.set(-1.0, -3.5, 4.5);
     this.scene.add(this.lightCyan);
 
-    // 4. White Specular Key
-    this.lightWhite = new THREE.PointLight(0xFFFFFF, 6.5, 22);
+    // 4. Pure Diamond White Specular Key
+    this.lightWhite = new THREE.PointLight(0xFFFFFF, 8.0, 26);
     this.lightWhite.position.set(0.5, 3.5, 4.0);
     this.scene.add(this.lightWhite);
   }
@@ -110,7 +117,8 @@ export class Preloader {
       pmremGenerator.compileEquirectangularShader();
 
       const envScene = new THREE.Scene();
-      envScene.background = new THREE.Color(0x0c0814);
+      // Radiant studio ambient background (never pitch black!)
+      envScene.background = new THREE.Color(0x282038);
 
       // Studio light panels simulating softboxes and neon rim lights
       const addPanel = (color, x, y, z, width, height) => {
@@ -124,15 +132,16 @@ export class Preloader {
       };
 
       // Bright white studio softbox reflection panels (gives mirror tiles pure silver shine!)
-      addPanel(0xffffff, 0, 8, 4, 10, 8);      // Overhead main softbox
-      addPanel(0xf0f4ff, -7, 2, 5, 6, 12);    // Left silver fill
-      addPanel(0xf0f4ff, 7, 2, 5, 6, 12);     // Right silver fill
-      addPanel(0xffffff, 0, -6, 4, 8, 4);     // Bottom silver bounce
+      addPanel(0xffffff, 0, 8, 4, 14, 10);      // Overhead main softbox
+      addPanel(0xf5f8ff, -7, 2, 5, 8, 14);    // Left silver fill
+      addPanel(0xf5f8ff, 7, 2, 5, 8, 14);     // Right silver fill
+      addPanel(0xffffff, 0, -6, 4, 10, 6);     // Bottom silver bounce
+      addPanel(0xffffff, 0, 0, 8, 12, 10);     // Front high-key softbox
 
       // Colored neon accents reflecting off mirror edges
-      addPanel(0xFF14D4, -6, 4, -4, 5, 8);    // Back magenta rim
-      addPanel(0xFFE600, 6, -3, -4, 5, 8);    // Back yellow rim
-      addPanel(0x00E5FF, 0, 6, -6, 8, 4);     // Top cyan rim
+      addPanel(0xFF14D4, -6, 4, -4, 7, 10);    // Back magenta rim
+      addPanel(0xFFE600, 6, -3, -4, 7, 10);    // Back yellow rim
+      addPanel(0x00E5FF, 0, 6, -6, 10, 6);     // Top cyan rim
 
       const renderTarget = pmremGenerator.fromScene(envScene);
       this.scene.environment = renderTarget.texture;
@@ -238,18 +247,21 @@ export class Preloader {
       roughness: 0.85,
       metalness: 0.1
     });
-    this.spinPivot.add(new THREE.Mesh(coreGeo, coreMat));
+    this.proceduralCore = new THREE.Mesh(coreGeo, coreMat);
+    this.spinPivot.add(this.proceduralCore);
 
-    // 2. Thousands of Real 3D Physical Square Mirror Tiles
+    // 2. Thousands of Real 3D Physical Square Mirror Tiles with High Specular Sheen
     const tileW = 0.095;
     const tileH = 0.088;
     const tileD = 0.012;
     const tileGeo = new THREE.BoxGeometry(tileW, tileH, tileD);
-    const tileMat = new THREE.MeshStandardMaterial({
-      color: 0xfcfdff,
-      metalness: 0.98,
-      roughness: 0.08,
-      envMapIntensity: 2.8
+    const tileMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      metalness: 0.94,
+      roughness: 0.04,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.02,
+      envMapIntensity: 4.2
     });
 
     const numRows = 36;
@@ -271,54 +283,54 @@ export class Preloader {
 
         dummy.position.set(x, y, z);
         dummy.lookAt(x * 2, y * 2, z * 2);
-        // Very slight natural facet micro-tilt (+/- 0.012 rad) so individual tiles shimmer as it spins
-        dummy.rotation.x += (Math.sin(i * 13 + r * 7) * 0.5) * 0.025;
-        dummy.rotation.y += (Math.cos(i * 7 + r * 13) * 0.5) * 0.025;
+        // Subtle micro-tilt so individual facets twinkle and catch light
+        dummy.rotation.x += (Math.sin(i * 13 + r * 7) * 0.5) * 0.035;
+        dummy.rotation.y += (Math.cos(i * 7 + r * 13) * 0.5) * 0.035;
         dummy.updateMatrix();
         matrices.push(dummy.matrix.clone());
       }
     }
 
-    const instancedMesh = new THREE.InstancedMesh(tileGeo, tileMat, matrices.length);
+    this.instancedMesh = new THREE.InstancedMesh(tileGeo, tileMat, matrices.length);
     for (let i = 0; i < matrices.length; i++) {
-      instancedMesh.setMatrixAt(i, matrices[i]);
+      this.instancedMesh.setMatrixAt(i, matrices[i]);
     }
-    instancedMesh.instanceMatrix.needsUpdate = true;
-    instancedMesh.castShadow = true;
-    instancedMesh.receiveShadow = true;
-    this.spinPivot.add(instancedMesh);
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+    this.instancedMesh.castShadow = true;
+    this.instancedMesh.receiveShadow = true;
+    this.spinPivot.add(this.instancedMesh);
 
-    // 3. Polished Gold Hardware (Cap, Loop, Hanging Chain)
+    // 3. Polished 24k Gold Hardware (Cap, Loop, Hanging Chain)
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xe5ba42,
       metalness: 0.95,
-      roughness: 0.2,
-      envMapIntensity: 2.2
+      roughness: 0.18,
+      envMapIntensity: 2.5
     });
 
     // Top brass mounting cap
     const hookGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.18, 32);
-    const hook = new THREE.Mesh(hookGeo, goldMat);
-    hook.position.y = R + 0.08;
-    this.spinPivot.add(hook);
+    this.proceduralHook = new THREE.Mesh(hookGeo, goldMat);
+    this.proceduralHook.position.y = R + 0.08;
+    this.spinPivot.add(this.proceduralHook);
 
     // Top loop
     const loopGeo = new THREE.TorusGeometry(0.18, 0.035, 16, 32);
-    const loop = new THREE.Mesh(loopGeo, goldMat);
-    loop.position.y = R + 0.28;
-    loop.rotation.y = Math.PI / 4;
-    this.spinPivot.add(loop);
+    this.proceduralLoop = new THREE.Mesh(loopGeo, goldMat);
+    this.proceduralLoop.position.y = R + 0.28;
+    this.proceduralLoop.rotation.y = Math.PI / 4;
+    this.spinPivot.add(this.proceduralLoop);
 
-    // Hanging chain links extending upward to the ceiling
-    const chainGroup = new THREE.Group();
+    // Hanging chain links extending upward to ceiling
+    this.proceduralChain = new THREE.Group();
     const linkGeo = new THREE.TorusGeometry(0.10, 0.022, 12, 24);
     for (let k = 0; k < 24; k++) {
       const link = new THREE.Mesh(linkGeo, goldMat);
       link.position.y = R + 0.38 + k * 0.16;
       link.rotation.y = (k % 2 === 0) ? 0 : Math.PI / 2;
-      chainGroup.add(link);
+      this.proceduralChain.add(link);
     }
-    this.discoGroup.add(chainGroup);
+    this.discoGroup.add(this.proceduralChain);
 
     this.scene.add(this.discoGroup);
 
@@ -337,6 +349,82 @@ export class Preloader {
       }, 50);
     }
     console.log('✅ Instant Thousand-Facet Mirror Disco Ball loaded on Frame 0!');
+  }
+
+  loadGltfModel() {
+    const loader = new GLTFLoader();
+    const modelUrl = `${cleanBase}models/disco_ball.glb`;
+
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const model = gltf.scene;
+        console.log('✨ Authentic 3D GLTF Disco Ball Model Loaded via GLTFLoader!');
+
+        // Upgrade GLTF PBR materials for maximum diamond mirror shine
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            if (child.name.includes('Reflective') || (child.material && child.material.name === 'Reflective')) {
+              child.material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0.98,
+                roughness: 0.03,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.02,
+                envMapIntensity: 4.5
+              });
+            } else if (child.name.includes('Metal') || child.name.includes('Chain') || child.name.includes('Fix') || (child.material && child.material.name === 'Metal')) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xe5ba42,
+                metalness: 0.95,
+                roughness: 0.18,
+                envMapIntensity: 2.8
+              });
+            } else if (child.name.includes('Base_Sphere') || (child.material && child.material.name === 'DiscoBall')) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0x14101e,
+                roughness: 0.9,
+                metalness: 0.1
+              });
+            }
+          }
+        });
+
+        // The sphere in disco_ball.glb is naturally centered at (0, 0, 0) with radius 12.27
+        const sphereRadius = 12.27;
+        const targetRadius = 1.72;
+        const targetScale = targetRadius / sphereRadius;
+
+        this.gltfModel = model;
+
+        // Graceful cross-fade: add GLTF model into spinPivot and fade out procedural tiles
+        model.scale.set(0.01, 0.01, 0.01);
+        this.spinPivot.add(model);
+
+        gsap.to(model.scale, {
+          x: targetScale,
+          y: targetScale,
+          z: targetScale,
+          duration: 0.6,
+          ease: 'power2.out',
+          onComplete: () => {
+            // Hide procedural fallback meshes once GLTF model is fully active
+            if (this.instancedMesh) this.instancedMesh.visible = false;
+            if (this.proceduralCore) this.proceduralCore.visible = false;
+            if (this.proceduralHook) this.proceduralHook.visible = false;
+            if (this.proceduralLoop) this.proceduralLoop.visible = false;
+            if (this.proceduralChain) this.proceduralChain.visible = false;
+          }
+        });
+      },
+      undefined,
+      (err) => {
+        console.warn('GLTF disco ball loading fallback to high-quality procedural instanced mesh:', err);
+      }
+    );
   }
 
   bindEvents() {

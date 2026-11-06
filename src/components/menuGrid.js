@@ -44,11 +44,11 @@ export class MenuGrid {
                 src="${dish.image}" 
                 alt="${dish.name}" 
                 class="w-full h-full object-cover rounded-full"
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 width="200"
                 height="200"
-                onerror="this.onerror=null; this.src='./dishes/${dish.id}.png';"
+                onerror="if (!this._retried) { this._retried = 1; this.src = './dishes/${dish.id}.png'; } else if (this._retried === 1) { this._retried = 2; this.src = 'dishes/${dish.id}.png'; }"
               />
             </div>
           </div>
@@ -58,17 +58,22 @@ export class MenuGrid {
             
             <div class="flex items-start justify-between gap-2 mb-2">
               <div>
-                <span class="inline-block px-2 py-0.5 rounded-full bg-black/40 text-neon-yellow font-mono text-[9px] font-bold uppercase tracking-wider mb-1">
-                  ${dish.badge}
+                <span class="inline-block px-2.5 py-0.5 rounded-full bg-black/40 text-neon-yellow font-mono text-[9px] font-bold uppercase tracking-wider mb-1.5 border border-neon-yellow/30">
+                  ✦ ${dish.badge}
                 </span>
                 <h3 class="font-display font-black text-2xl sm:text-3xl tracking-tight uppercase leading-none text-white drop-shadow-sm">
                   ${dish.name}
                 </h3>
               </div>
               <!-- Index badge -->
-              <div class="w-8 h-8 rounded-full border border-white/50 flex items-center justify-center font-mono text-xs text-white/95 shrink-0">
+              <div class="w-8 h-8 rounded-full border border-white/50 flex items-center justify-center font-mono text-xs text-white/95 shrink-0 bg-black/25">
                 ${dish.index}
               </div>
+            </div>
+
+            <!-- Artisan Craft Line -->
+            <div class="flex items-center gap-1.5 text-neon-yellow/80 font-mono text-[9px] uppercase tracking-widest mb-2 font-bold">
+              <span>🔥</span><span>72H SOURDOUGH • 480°C LIVE FIRE</span>
             </div>
 
             <!-- Description text -->
