@@ -125,16 +125,15 @@ export class Preloader {
       };
 
       // Bright white studio softbox reflection panels (gives mirror tiles pure silver shine!)
-      addPanel(0xffffff, 0, 8, 4, 14, 10);      // Overhead main softbox
-      addPanel(0xf5f8ff, -7, 2, 5, 8, 14);    // Left silver fill
-      addPanel(0xf5f8ff, 7, 2, 5, 8, 14);     // Right silver fill
-      addPanel(0xffffff, 0, -6, 4, 10, 6);     // Bottom silver bounce
-      addPanel(0xffffff, 0, 0, 8, 12, 10);     // Front high-key softbox
+      addPanel(0xffffff, 0, 8, 4, 10, 8);      // Overhead main softbox
+      addPanel(0xf0f4ff, -7, 2, 5, 6, 12);    // Left silver fill
+      addPanel(0xf0f4ff, 7, 2, 5, 6, 12);     // Right silver fill
+      addPanel(0xffffff, 0, -6, 4, 8, 4);     // Bottom silver bounce
 
       // Colored neon accents reflecting off mirror edges
-      addPanel(0xFF14D4, -6, 4, -4, 7, 10);    // Back magenta rim
-      addPanel(0xFFE600, 6, -3, -4, 7, 10);    // Back yellow rim
-      addPanel(0x00E5FF, 0, 6, -6, 10, 6);     // Top cyan rim
+      addPanel(0xFF14D4, -6, 4, -4, 5, 8);    // Back magenta rim
+      addPanel(0xFFE600, 6, -3, -4, 5, 8);    // Back yellow rim
+      addPanel(0x00E5FF, 0, 6, -6, 8, 4);     // Top cyan rim
 
       const renderTarget = pmremGenerator.fromScene(envScene);
       this.scene.environment = renderTarget.texture;
@@ -249,12 +248,12 @@ export class Preloader {
     const tileD = 0.012;
     const tileGeo = new THREE.BoxGeometry(tileW, tileH, tileD);
     const tileMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      metalness: 0.94,
-      roughness: 0.04,
+      color: 0xfcfdff,
+      metalness: 0.96,
+      roughness: 0.08,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.02,
-      envMapIntensity: 4.2
+      clearcoatRoughness: 0.04,
+      envMapIntensity: 2.8
     });
 
     const numRows = 36;
